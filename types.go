@@ -28,6 +28,15 @@ func String(val lispVal) string {
 	case STRING:
 		return fmt.Sprintf("\"%v\"", val)
 
+	case NUM:
+		// Try to print ints correctly
+		i := int(val)
+		if NUM(i) == val {
+			return fmt.Sprint(i)
+		} else {
+			return fmt.Sprint(val)
+		}
+
 	case nil:
 		return ""
 

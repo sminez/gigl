@@ -1,6 +1,9 @@
 package gigl
 
-import "log"
+import (
+	"log"
+	"math"
+)
 
 /*
 	Builtin functions for the global environment.
@@ -78,7 +81,11 @@ func cdr(lst ...lispVal) lispVal {
 */
 
 // map a function over a collection
-func mapfunc(f lispFunc, col []lispVal) lispVal {
+// func mapfunc(f lispFunc, col []lispVal) lispVal {
+func mapfunc(args ...lispVal) lispVal {
+	f := args[0].(func(...lispVal) lispVal)
+	col := args[1].([]lispVal)
+
 	result := make([]lispVal, len(col))
 	for i, element := range col {
 		result[i] = f(element)
@@ -87,7 +94,11 @@ func mapfunc(f lispFunc, col []lispVal) lispVal {
 }
 
 // use a boolean function to filter a collection
-func filter(f lispComp, col []lispVal) lispVal {
+// func filter(f lispComp, col []lispVal) lispVal {
+func filter(args ...lispVal) lispVal {
+	f := args[0].(func(...lispVal) bool)
+	col := args[1].([]lispVal)
+
 	result := make([]lispVal, 0)
 	for _, element := range col {
 		if f(element) {
@@ -99,17 +110,50 @@ func filter(f lispComp, col []lispVal) lispVal {
 
 // collapse a collection from the left using a binary
 // operator and an optional accumulator value
-func foldl(f lispFunc, col []lispVal, acc ...lispVal) lispVal {
+// func foldl(f lispFunc, col []lispVal, acc ...lispVal) lispVal {
+func foldl(args ...lispVal) lispVal {
 	var result lispVal
-	if len(acc) == 1 {
-		result = acc[0]
-	}
-	if len(acc) > 1 {
-		log.Println("acc must be a value")
+
+	f := args[0].(func(...lispVal) lispVal)
+	col := args[1].([]lispVal)
+
+	switch l := len(args); l {
+	case 2:
+		result = col[0]
+		col = col[1:]
+	case 3:
+		// Use the provided accumulator if there is one
+		result = args[2].(lispVal)
 	}
 
 	for _, element := range col {
 		result = f(result, element)
 	}
 	return result
+}
+
+/*
+	Sequence functions
+*/
+
+// Python style range
+func makeRange(args ...lispVal) lispVal {
+	var min, max, step int
+
+	switch l := len(args); l {
+	case 1:
+		min, max, step = 0, int(args[0].(NUM)), 1
+	case 2:
+		min, max, step = int(args[0].(NUM)), int(args[1].(NUM)), 1
+	case 3:
+		min, max, step = int(args[0].(NUM)), int(args[1].(NUM)), int(args[2].(NUM))
+	default:
+		log.Println("invalid args for range")
+	}
+
+	r := make([]lispVal, int(math.Ceil(float64(max-min)/float64(step))))
+	for i := range r {
+		r[i] = NUM(min + (step * i))
+	}
+	return r
 }

@@ -46,6 +46,8 @@ func newGlobalEnvironment(e evaluator) *environment {
 			"map":    mapfunc,
 			"filter": filter,
 			"foldl":  foldl,
+			// sequence functions
+			"range": makeRange,
 		},
 		nil,
 	}
