@@ -60,6 +60,13 @@ func div(lst ...lispVal) lispVal {
 	return total
 }
 
+// divide two or more numbers in succession
+func mod(lst ...lispVal) lispVal {
+	a := lst[0].(float64)
+	b := lst[1].(float64)
+	return float64(int64(a) % int64(b))
+}
+
 /*
 	Numeric Comparisons
 */

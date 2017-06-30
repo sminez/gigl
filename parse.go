@@ -55,7 +55,6 @@ func parse(tokens *[]string) lispVal {
 		// Start of a list so recuse and build it up
 		// TODO :: finish and use the singly linked list type
 		lst := make([]lispVal, 0)
-		// TODO :: need to handle the error case of an unclosed s-expression
 		for (*tokens)[0] != ")" {
 			nextToken := parse(tokens)
 			if nextToken != SYMBOL("") {

@@ -34,7 +34,7 @@ func newGlobalEnvironment(e evaluator) *environment {
 			"-": sub,
 			"*": mul,
 			"/": div,
-			// "abs": abs,
+			"%": mod,
 			// comparisons
 			"<":      lessThan,
 			"<=":     lessThanOrEqual,
@@ -51,9 +51,10 @@ func newGlobalEnvironment(e evaluator) *environment {
 			"cdr":  cdr,
 			"tail": cdr,
 			// higher order functions
-			"map":    mapfunc,
-			"filter": filter,
-			"foldl":  foldl,
+			// NOTE :: using LISP versions in prelude.go
+			// "map":    mapfunc,
+			// "filter": filter,
+			// "foldl":  foldl,
 			// sequence functions
 			"range": makeRange,
 		},

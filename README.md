@@ -6,14 +6,15 @@ LISP with goroutines? Sounds fun to me!
 
 # .: TODO :.
 --------------
-- [ ] OR, AND, NOT
+- [x] OR, AND, NOT
 - [ ] let
+- [ ] Type checks
 - [ ] error handling and recover from panic
 - [ ] Bingnum arithmetic
   - see https://golang.org/pkg/math/big/
 - [ ] cond
 - [ ] for-each
-- [ ] larger prelude
+- [x] larger prelude
 - [ ] Tail call optimisation
 - [ ] lazy streams
   - See http://blog.thezerobit.com/2012/07/28/lazy-sequences-in-common-lisp.html
@@ -32,6 +33,11 @@ LISP with goroutines? Sounds fun to me!
 `http://norvig.com/lispy2.html`
 `https://github.com/norvig/pytudes/blob/master/lispy.py`
 `https://github.com/norvig/pytudes/blob/master/lispytest.py`
+
+`https://github.com/ashinn/chibi-scheme/tree/master/lib`
+`https://github.com/hylang/hy/tree/master/hy/core`
+`https://github.com/clojure/clojure/blob/master/src/clj/clojure/repl.clj`
+`https://github.com/write-you-a-scheme-v2/scheme/blob/master/lib/stdlib.scm`
 
 `http://www.nada.kth.se/kurser/su/DA2001/sudata16/examination/schemeCheatsheet.pdf`
 `http://www.gigamonkeys.com/book/macros-standard-control-constructs.html`
