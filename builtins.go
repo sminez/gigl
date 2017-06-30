@@ -1,6 +1,7 @@
 package gigl
 
 import (
+	"fmt"
 	"log"
 	"math"
 )
@@ -15,6 +16,8 @@ import (
 	and also throws caution to the wind in terms of passing higher order
 	functions around.  Very few things are in place to prevent you shooting
 	yourself in the foot...!
+
+	TODO :: look at https://golang.org/pkg/math/big/ for arbitrary precision values
 */
 
 /*
@@ -63,6 +66,7 @@ func div(lst ...lispVal) lispVal {
 
 // construct a new list by prepending the new element
 func cons(lst ...lispVal) lispVal {
+	fmt.Println(lst[1:][0])
 	return append([]lispVal{lst[0]}, lst[1:]...)
 }
 

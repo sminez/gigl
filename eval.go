@@ -4,10 +4,7 @@ package gigl
 	This is the main eval/apply loop as described in SICP
 */
 
-import (
-	"fmt"
-	"log"
-)
+import "log"
 
 type evaluator struct {
 	globalEnv *environment
@@ -69,22 +66,36 @@ func (e *evaluator) eval(expression lispVal, env *environment) lispVal {
 
 		case "define":
 			// Bind this symbol in the current environment
-			fmt.Println(expr[1])
 			sym := expr[1].(SYMBOL)
 			if env.find(sym) != nil {
-				log.Println("cannont set redefine an existing symbol, use set!")
+				log.Println("Unable to redefine an existing symbol, use set!")
 			}
 
 			env.vals[expr[1].(SYMBOL)] = e.eval(expr[2], env)
 			result = nil
 
-		case "lambda":
+		case "lambda", "λ":
 			// Define a new procedure and return it
 			result = procedure{
 				params: expr[1],
 				body:   expr[2],
 				env:    env,
 			}
+
+		case "defn":
+			// define a new procedure and bind it to a symbol
+			sym := expr[1].(SYMBOL)
+			if env.find(sym) != nil {
+				log.Println("unable to redefine an existing symbol, use set!")
+			}
+
+			proc := procedure{
+				params: expr[2],
+				body:   expr[3],
+				env:    env,
+			}
+			env.vals[expr[1].(SYMBOL)] = proc
+			result = nil
 
 		case "begin":
 			// Execute a collection of statements and return the

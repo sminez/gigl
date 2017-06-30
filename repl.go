@@ -15,6 +15,7 @@ var (
 )
 
 // REPL is the read-eval-print-loop
+// TODO: look at https://github.com/chzyer/readline
 func REPL() {
 	scanner := bufio.NewScanner(os.Stdin)
 	evaluator := NewEvaluator()

@@ -14,7 +14,6 @@ import (
 type lispVal interface{}
 
 // Convert a lispVal to a string
-// TODO :: make this work nicely for the list type
 func String(val lispVal) string {
 	switch val := val.(type) {
 	case []lispVal:
@@ -30,7 +29,7 @@ func String(val lispVal) string {
 
 	case NUM:
 		// Try to print ints correctly
-		i := int(val)
+		i := int64(val)
 		if NUM(i) == val {
 			return fmt.Sprint(i)
 		} else {
