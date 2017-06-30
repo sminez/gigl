@@ -36,6 +36,12 @@ func String(val lispVal) string {
 			return fmt.Sprint(val)
 		}
 
+	case bool:
+		if val {
+			return "#t"
+		}
+		return "#f"
+
 	case nil:
 		return ""
 

@@ -26,7 +26,7 @@ func (e *evaluator) eval(expression lispVal, env *environment) lispVal {
 	}
 
 	switch expr := expression.(type) {
-	case float64, string:
+	case float64, string, bool:
 		// Just return the value as is
 		result = expr
 
@@ -82,7 +82,7 @@ func (e *evaluator) eval(expression lispVal, env *environment) lispVal {
 			// define a new procedure and bind it to a symbol
 			sym := expr[1].(SYMBOL)
 			if env.find(sym) != nil {
-				log.Println("unable to redefine an existing symbol, use set!")
+				log.Println("Unable to redefine an existing symbol, use set!")
 			}
 
 			proc := makeProc(expr[2], expr[3], env, e)

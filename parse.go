@@ -88,6 +88,12 @@ func makeAtom(token string) (lispVal, error) {
 		f, _ := strconv.ParseFloat(token, 64)
 		return float64(f), nil
 
+	case token == "true", token == "#t":
+		return true, nil
+
+	case token == "false", token == "#f":
+		return false, nil
+
 	// case reKeyword.MatchString(token):
 	// 	log.Println("tis a keyword!")
 	// 	return KEYWORD(token[1:]), nil
