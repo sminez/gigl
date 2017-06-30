@@ -20,6 +20,13 @@ func REPL() {
 	scanner := bufio.NewScanner(os.Stdin)
 	evaluator := NewEvaluator()
 
+	fmt.Printf("((Welcome to GIGL!)\n  (Loading prelude...)\n")
+	// Load the prelude
+	for _, proc := range prelude {
+		evaluator.eval(read(proc), nil)
+	}
+	fmt.Println("  (...done!))")
+
 	for {
 		prevInput = ""
 		fmt.Print(InPrompt)

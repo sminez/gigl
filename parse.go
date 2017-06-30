@@ -82,11 +82,11 @@ func parse(tokens *[]string) lispVal {
 func makeAtom(token string) (lispVal, error) {
 	switch {
 	case token[0] == '"' && token[len(token)-1] == '"':
-		return STRING(token[1 : len(token)-1]), nil
+		return string(token[1 : len(token)-1]), nil
 
 	case reInt.MatchString(token), reFloat.MatchString(token):
 		f, _ := strconv.ParseFloat(token, 64)
-		return NUM(f), nil
+		return float64(f), nil
 
 	// case reKeyword.MatchString(token):
 	// 	log.Println("tis a keyword!")

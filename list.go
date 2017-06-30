@@ -15,13 +15,6 @@ type LispList struct {
 	length int   // a cached, known length for the list
 }
 
-// Init initializes or clears list l.
-func (l *LispList) Init() *LispList {
-	l.root.next = nil
-	l.length = 0
-	return l
-}
-
 // New returns an initialized list.
 func NewList(head lispVal) *LispList {
 	return &LispList{

@@ -24,13 +24,13 @@ func String(val lispVal) string {
 		}
 		return "(" + strings.Join(lst, " ") + ")"
 
-	case STRING:
+	case string:
 		return fmt.Sprintf("\"%v\"", val)
 
-	case NUM:
+	case float64:
 		// Try to print ints correctly
 		i := int64(val)
-		if NUM(i) == val {
+		if float64(i) == val {
 			return fmt.Sprint(i)
 		} else {
 			return fmt.Sprint(val)
@@ -54,13 +54,11 @@ type lispComp func(...lispVal) bool
 // Only basic data types so far
 type SYMBOL string
 
-type STRING string
-
 type KEYWORD string
 
-type NUM float64
-
 // TODO :: It would be nice to have the full numeric tower...
+// type float64 float64
+
 // type INT int64
 
 // type FLOAT float64
@@ -81,4 +79,29 @@ type procedure struct {
 	params lispVal
 	body   lispVal
 	env    *environment
+}
+
+// Make a callable procedure
+func makeProc(params, body lispVal, env *environment, e *evaluator) func(...lispVal) lispVal {
+	innerEnv := &environment{
+		vals:  make(map[SYMBOL]lispVal),
+		outer: env,
+	}
+
+	return func(args ...lispVal) lispVal {
+		switch params := params.(type) {
+		case []lispVal:
+			// Bind a list of paramaters into the new environment
+			for i, param := range params {
+				innerEnv.vals[param.(SYMBOL)] = args[i]
+			}
+
+		default:
+			// Bind as a single argument
+			innerEnv.vals[params.(SYMBOL)] = args
+		}
+
+		// evaluate the result in the new environment
+		return e.eval(body, innerEnv)
+	}
 }

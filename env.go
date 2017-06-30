@@ -35,6 +35,14 @@ func newGlobalEnvironment(e evaluator) *environment {
 			"*": mul,
 			"/": div,
 			// "abs": abs,
+			// comparisons
+			"<":      lessThan,
+			"<=":     lessThanOrEqual,
+			">":      greaterThan,
+			">=":     greaterThanOrEqual,
+			"=":      equal,
+			"equal?": isEqual,
+			"null?":  null,
 			// LISP list manipulations
 			"cons": cons,
 			":":    cons,

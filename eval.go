@@ -26,7 +26,7 @@ func (e *evaluator) eval(expression lispVal, env *environment) lispVal {
 	}
 
 	switch expr := expression.(type) {
-	case NUM, STRING:
+	case float64, string:
 		// Just return the value as is
 		result = expr
 
@@ -76,11 +76,7 @@ func (e *evaluator) eval(expression lispVal, env *environment) lispVal {
 
 		case "lambda", "λ":
 			// Define a new procedure and return it
-			result = procedure{
-				params: expr[1],
-				body:   expr[2],
-				env:    env,
-			}
+			result = makeProc(expr[1], expr[2], env, e)
 
 		case "defn":
 			// define a new procedure and bind it to a symbol
@@ -89,11 +85,7 @@ func (e *evaluator) eval(expression lispVal, env *environment) lispVal {
 				log.Println("unable to redefine an existing symbol, use set!")
 			}
 
-			proc := procedure{
-				params: expr[2],
-				body:   expr[3],
-				env:    env,
-			}
+			proc := makeProc(expr[2], expr[3], env, e)
 			env.vals[expr[1].(SYMBOL)] = proc
 			result = nil
 
