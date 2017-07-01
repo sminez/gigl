@@ -35,6 +35,8 @@ func tokenise(s string) []string {
 
 	split := strings.Split(s, " ")
 	tokens := make([]string, 0)
+
+	// Remove empty strings
 	for _, token := range split {
 		if token != "" {
 			tokens = append(tokens, token)
@@ -53,7 +55,6 @@ func parse(tokens *[]string) lispVal {
 	switch token {
 	case "(":
 		// Start of a list so recuse and build it up
-		// TODO :: finish and use the singly linked list type
 		lst := make([]lispVal, 0)
 		for (*tokens)[0] != ")" {
 			nextToken := parse(tokens)
@@ -63,7 +64,7 @@ func parse(tokens *[]string) lispVal {
 		}
 		// Slice off that last paren
 		*tokens = (*tokens)[1:]
-		return lst
+		return List(lst...)
 
 	default:
 		// if it"s not a list then it"s an atom

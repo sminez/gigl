@@ -37,8 +37,12 @@ func REPL() {
 
 			if len(input) > 0 {
 				if hasMatchingParens(input) {
-					result := evaluator.eval(read(input), nil)
-					fmt.Println(OutPrompt, String(result))
+					result, err := evaluator.eval(read(input), nil)
+					if err != nil {
+						fmt.Println(err)
+					} else {
+						fmt.Println(OutPrompt, String(result))
+					}
 					break
 				} else {
 					prevInput = input

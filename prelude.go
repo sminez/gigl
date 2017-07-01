@@ -1,7 +1,7 @@
 package gigl
 
 // This is a LISP prelude of procedures to be defined at runtime
-// Probably more
+// Probably more efficient to define these in go but meh...this is more fun!
 var prelude = []string{
 	"(defn list l l)",
 	"(defn NOT (x) (if x #f #t))",

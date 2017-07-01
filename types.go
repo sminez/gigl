@@ -16,6 +16,9 @@ type lispVal interface{}
 // Convert a lispVal to a string
 func String(val lispVal) string {
 	switch val := val.(type) {
+	case LispList:
+		return val.String()
+
 	case []lispVal:
 		// display the slice as a LISPy list
 		lst := make([]string, len(val))
@@ -88,13 +91,13 @@ type procedure struct {
 }
 
 // Make a callable procedure
-func makeProc(params, body lispVal, env *environment, e *evaluator) func(...lispVal) lispVal {
+func makeProc(params, body lispVal, env *environment, e *evaluator) (func(...lispVal) (lispVal, error), error) {
 	innerEnv := &environment{
 		vals:  make(map[SYMBOL]lispVal),
 		outer: env,
 	}
 
-	return func(args ...lispVal) lispVal {
+	proc := func(args ...lispVal) (lispVal, error) {
 		switch params := params.(type) {
 		case []lispVal:
 			// Bind a list of paramaters into the new environment
@@ -102,12 +105,22 @@ func makeProc(params, body lispVal, env *environment, e *evaluator) func(...lisp
 				innerEnv.vals[param.(SYMBOL)] = args[i]
 			}
 
+		case LispList:
+			// Bind a list of paramaters into the new environment
+			for i, param := range params.toSlice() {
+				innerEnv.vals[param.(SYMBOL)] = args[i]
+			}
 		default:
 			// Bind as a single argument
 			innerEnv.vals[params.(SYMBOL)] = args
 		}
 
 		// evaluate the result in the new environment
-		return e.eval(body, innerEnv)
+		result, err := e.eval(body, innerEnv)
+		if err != nil {
+			return nil, err
+		}
+		return result, nil
 	}
+	return proc, nil
 }

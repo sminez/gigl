@@ -18,4 +18,5 @@ func main() {
 	tail := l3.Tail()
 	fmt.Printf("tail is %v\n", tail)
 	fmt.Println(l3.Len())
+	fmt.Println(l3.Tail().Len())
 }

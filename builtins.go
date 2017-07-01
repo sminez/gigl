@@ -1,8 +1,10 @@
 package gigl
 
 import (
+	"fmt"
 	"log"
 	"math"
+	"math/big"
 	"reflect"
 )
 
@@ -20,87 +22,201 @@ import (
 	TODO :: look at https://golang.org/pkg/math/big/ for arbitrary precision values
 */
 
+// helper to convert to arbitray precision bignums
+func getNum(l lispVal) (big.Float, error) {
+	var f big.Float
+
+	switch l := l.(type) {
+	case uint8:
+		f.SetInt64(int64(l))
+	case int8:
+		f.SetInt64(int64(l))
+	case uint32:
+		f.SetInt64(int64(l))
+	case int32:
+		f.SetInt64(int64(l))
+	case uint64:
+		f.SetUint64(l)
+	case int64:
+		f.SetInt64(l)
+	case int:
+		f.SetInt64(int64(l))
+	case float32:
+		f.SetFloat64(float64(l))
+	case float64:
+		f.SetFloat64(float64(l))
+	default:
+		return f, fmt.Errorf("Non-numeric argument: %v", l)
+	}
+	return f, nil
+}
+
+func getFloat(l lispVal) (float64, error) {
+	val, ok := l.(float64)
+	if !ok {
+		return 0, fmt.Errorf("Non-numeric argument: %v", l)
+	}
+	return val, nil
+}
+
 /*
 	Arithmetic operations
 */
 
 // add together two or more numbers
-func add(lst ...lispVal) lispVal {
-	total := lst[0].(float64)
-	for _, value := range lst[1:] {
-		total += value.(float64)
+func add(lst ...lispVal) (lispVal, error) {
+	total, err := getFloat(lst[0])
+	if err != nil {
+		return nil, err
 	}
-	return total
+
+	for _, value := range lst[1:] {
+		v, err := getFloat(value)
+		if err != nil {
+			return nil, err
+		}
+		total += v
+	}
+	return total, nil
 }
 
 // subtract two or more numbers in succession
-func sub(lst ...lispVal) lispVal {
-	total := lst[0].(float64)
-	for _, value := range lst[1:] {
-		total -= value.(float64)
+func sub(lst ...lispVal) (lispVal, error) {
+	total, err := getFloat(lst[0])
+	if err != nil {
+		return nil, err
 	}
-	return total
+
+	for _, value := range lst[1:] {
+		v, err := getFloat(value)
+		if err != nil {
+			return nil, err
+		}
+		total -= v
+	}
+	return total, nil
 }
 
 // multiply two or more numbers in succession
-func mul(lst ...lispVal) lispVal {
-	total := lst[0].(float64)
-	for _, value := range lst[1:] {
-		total *= value.(float64)
+func mul(lst ...lispVal) (lispVal, error) {
+	total, err := getFloat(lst[0])
+	if err != nil {
+		return nil, err
 	}
-	return total
+
+	for _, value := range lst[1:] {
+		v, err := getFloat(value)
+		if err != nil {
+			return nil, err
+		}
+		total *= v
+	}
+	return total, nil
 }
 
 // divide two or more numbers in succession
-func div(lst ...lispVal) lispVal {
-	total := lst[0].(float64)
-	for _, value := range lst[1:] {
-		total /= value.(float64)
+func div(lst ...lispVal) (lispVal, error) {
+	total, err := getFloat(lst[0])
+	if err != nil {
+		return nil, err
 	}
-	return total
+
+	for _, value := range lst[1:] {
+		v, err := getFloat(value)
+		if err != nil {
+			return nil, err
+		}
+		total /= v
+	}
+	return total, nil
 }
 
-// divide two or more numbers in succession
-func mod(lst ...lispVal) lispVal {
-	a := lst[0].(float64)
-	b := lst[1].(float64)
-	return float64(int64(a) % int64(b))
+// compute the remainder on division
+func mod(lst ...lispVal) (lispVal, error) {
+	a, err := getFloat(lst[0])
+	if err != nil {
+		return nil, err
+	}
+	b, err := getFloat(lst[1])
+	if err != nil {
+		return nil, err
+	}
+	return float64(int64(a) % int64(b)), nil
 }
 
 /*
 	Numeric Comparisons
 */
-func lessThan(lst ...lispVal) lispVal {
-	return lst[0].(float64) < lst[1].(float64)
+func lessThan(lst ...lispVal) (lispVal, error) {
+	a, err := getFloat(lst[0])
+	if err != nil {
+		return nil, err
+	}
+	b, err := getFloat(lst[1])
+	if err != nil {
+		return nil, err
+	}
+	return a < b, nil
 }
 
-func lessThanOrEqual(lst ...lispVal) lispVal {
-	return lst[0].(float64) <= lst[1].(float64)
+func lessThanOrEqual(lst ...lispVal) (lispVal, error) {
+	a, err := getFloat(lst[0])
+	if err != nil {
+		return nil, err
+	}
+	b, err := getFloat(lst[1])
+	if err != nil {
+		return nil, err
+	}
+	return a <= b, nil
 }
 
-func greaterThan(lst ...lispVal) lispVal {
-	return lst[0].(float64) > lst[1].(float64)
+func greaterThan(lst ...lispVal) (lispVal, error) {
+	a, err := getFloat(lst[0])
+	if err != nil {
+		return nil, err
+	}
+	b, err := getFloat(lst[1])
+	if err != nil {
+		return nil, err
+	}
+	return a > b, nil
 }
 
-func greaterThanOrEqual(lst ...lispVal) lispVal {
-	return lst[0].(float64) >= lst[1].(float64)
+func greaterThanOrEqual(lst ...lispVal) (lispVal, error) {
+	a, err := getFloat(lst[0])
+	if err != nil {
+		return nil, err
+	}
+	b, err := getFloat(lst[1])
+	if err != nil {
+		return nil, err
+	}
+	return a >= b, nil
 }
 
-func equal(lst ...lispVal) lispVal {
-	return lst[0].(float64) == lst[1].(float64)
+func equal(lst ...lispVal) (lispVal, error) {
+	a, err := getFloat(lst[0])
+	if err != nil {
+		return nil, err
+	}
+	b, err := getFloat(lst[1])
+	if err != nil {
+		return nil, err
+	}
+	return a == b, nil
 }
 
-func isEqual(lst ...lispVal) lispVal {
-	return reflect.DeepEqual(lst[0], lst[1])
+func isEqual(lst ...lispVal) (lispVal, error) {
+	return reflect.DeepEqual(lst[0], lst[1]), nil
 }
 
-func null(lst ...lispVal) lispVal {
+func null(lst ...lispVal) (lispVal, error) {
 	list, ok := lst[0].([]lispVal)
 	if !ok {
-		// TODO:: should this be an error?
-		return false
+		return nil, fmt.Errorf("null? can only be called on lists")
 	}
-	return len(list) == 0
+	return len(list) == 0, nil
 }
 
 /*
@@ -108,78 +224,31 @@ func null(lst ...lispVal) lispVal {
 */
 
 // construct a new list by prepending the new element
-func cons(lst ...lispVal) lispVal {
-	head := lst[0]
-	tail := lst[1]
-	switch tail.(type) {
+func cons(lst ...lispVal) (lispVal, error) {
+	switch lst[1].(type) {
 	case []lispVal:
-		return append([]lispVal{lst[0]}, lst[1].([]lispVal)...)
+		return append([]lispVal{lst[0]}, lst[1].([]lispVal)...), nil
 	default:
-		return []lispVal{head, tail}
+		return nil, fmt.Errorf("The second argument to cons must be a list")
 	}
 }
 
 // return the first element of a list
-func car(lst ...lispVal) lispVal {
-	return lst[0].([]lispVal)[0]
+func car(lst ...lispVal) (lispVal, error) {
+	l, ok := lst[0].([]lispVal)
+	if !ok {
+		return nil, fmt.Errorf("car called on an atom")
+	}
+	return l[0], nil
 }
 
 // everything but the first element of a list
-func cdr(lst ...lispVal) lispVal {
-	return lst[0].([]lispVal)[1:]
-}
-
-/*
-	Higher order functions
-*/
-
-// map a function over a collection
-func mapfunc(args ...lispVal) lispVal {
-	f := args[0].(func(...lispVal) lispVal)
-	col := args[1].([]lispVal)
-
-	result := make([]lispVal, len(col))
-	for i, element := range col {
-		result[i] = f(element)
+func cdr(lst ...lispVal) (lispVal, error) {
+	l, ok := lst[0].([]lispVal)
+	if !ok {
+		return nil, fmt.Errorf("cdr called on an atom")
 	}
-	return result
-}
-
-// use a boolean function to filter a collection
-func filter(args ...lispVal) lispVal {
-	f := args[0].(func(...lispVal) bool)
-	col := args[1].([]lispVal)
-
-	result := make([]lispVal, 0)
-	for _, element := range col {
-		if f(element) {
-			result = append(result, element)
-		}
-	}
-	return result
-}
-
-// collapse a collection from the left using a binary
-// operator and an optional accumulator value
-func foldl(args ...lispVal) lispVal {
-	var result lispVal
-
-	f := args[0].(func(...lispVal) lispVal)
-	col := args[1].([]lispVal)
-
-	switch l := len(args); l {
-	case 2:
-		result = col[0]
-		col = col[1:]
-	case 3:
-		// Use the provided accumulator if there is one
-		result = args[2].(lispVal)
-	}
-
-	for _, element := range col {
-		result = f(result, element)
-	}
-	return result
+	return l[1:], nil
 }
 
 /*
@@ -187,16 +256,52 @@ func foldl(args ...lispVal) lispVal {
 */
 
 // Python style range
-func makeRange(args ...lispVal) lispVal {
-	var min, max, step int64
+func makeRange(args ...lispVal) (lispVal, error) {
+	var (
+		min  = int64(0)
+		max  = int64(0)
+		step = int64(1)
+	)
 
 	switch l := len(args); l {
 	case 1:
-		min, max, step = int64(0), int64(args[0].(float64)), int64(1)
+		fmax, err := getFloat(args[0])
+		if err != nil {
+			return nil, err
+		}
+		max = int64(fmax)
+
 	case 2:
-		min, max, step = int64(args[0].(float64)), int64(args[1].(float64)), int64(1)
+		fmin, err := getFloat(args[0])
+		if err != nil {
+			return nil, err
+		}
+		min = int64(fmin)
+
+		fmax, err := getFloat(args[1])
+		if err != nil {
+			return nil, err
+		}
+		max = int64(fmax)
+
 	case 3:
-		min, max, step = int64(args[0].(float64)), int64(args[1].(float64)), int64(args[2].(float64))
+		fmin, err := getFloat(args[0])
+		if err != nil {
+			return nil, err
+		}
+		min = int64(fmin)
+
+		fmax, err := getFloat(args[1])
+		if err != nil {
+			return nil, err
+		}
+		max = int64(fmax)
+		fstep, err := getFloat(args[2])
+		if err != nil {
+			return nil, err
+		}
+		step = int64(fstep)
+
 	default:
 		log.Println("invalid args for range")
 	}
@@ -205,5 +310,5 @@ func makeRange(args ...lispVal) lispVal {
 	for i := range r {
 		r[i] = float64(min + (step * int64(i)))
 	}
-	return r
+	return r, nil
 }

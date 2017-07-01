@@ -9,7 +9,7 @@ LISP with goroutines? Sounds fun to me!
 - [x] OR, AND, NOT
 - [ ] let
 - [ ] Type checks
-- [ ] error handling and recover from panic
+- [x] error handling and recover from panic
 - [ ] Bingnum arithmetic
   - see https://golang.org/pkg/math/big/
 - [ ] cond

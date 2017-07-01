@@ -2,6 +2,16 @@ package gigl
 
 import "strings"
 
+/*
+	To get slicing to work we need this:
+
+	type Sequencer interface {
+		Mean() float64
+		Slice(start, end int) Sequencer
+	}
+
+*/
+
 // A node in a sngly linked list
 type Node struct {
 	Value lispVal // the value stored in this node
@@ -36,8 +46,22 @@ func (l *LispList) Tail() *LispList {
 	}
 }
 
+// Return the head and tail of the list
+func (l *LispList) popHead() (lispVal, *LispList) {
+	return l.Head(), l.Tail()
+}
+
+func (l *LispList) toSlice() []lispVal {
+	lst := make([]lispVal, l.length)
+	node := l.root
+	for i := 0; i < l.length; i++ {
+		lst[i] = node.Value
+		node = node.next
+	}
+	return lst
+}
+
 func (l LispList) String() string {
-	// display the slice as a LISPy list
 	lst := make([]string, l.length)
 	node := l.root
 	for i := 0; i < l.length; i++ {
@@ -45,7 +69,6 @@ func (l LispList) String() string {
 		node = node.next
 	}
 	return "(" + strings.Join(lst, " ") + ")"
-
 }
 
 // Len returns the length of a list
@@ -62,7 +85,12 @@ func Cons(v lispVal, lst *LispList) *LispList {
 }
 
 // List is a repeated cons to build up a list
-func List(vals ...lispVal) *LispList {
+func List(vals ...lispVal) LispList {
+	if len(vals) == 0 {
+		// Empty list
+		return LispList{}
+	}
+
 	lst := NewList(vals[0])
 	node := lst.root
 	for i := 1; i < len(vals); i++ {
@@ -71,5 +99,5 @@ func List(vals ...lispVal) *LispList {
 		node = newNode
 	}
 	lst.length = len(vals)
-	return lst
+	return *lst
 }

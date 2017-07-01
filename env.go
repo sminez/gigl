@@ -11,8 +11,8 @@ type environment struct {
 // Find attempts to find the closest environment that contains the
 // requested symbol.
 func (e *environment) find(sym SYMBOL) *environment {
-	_, inEnvironment := e.vals[sym]
-	if inEnvironment {
+	_, known := e.vals[sym]
+	if known {
 		return e
 	}
 
@@ -20,6 +20,7 @@ func (e *environment) find(sym SYMBOL) *environment {
 		return e.outer.find(sym)
 	}
 
+	// Return an empty environment to the caller
 	return nil
 }
 
@@ -29,13 +30,17 @@ func (e *environment) find(sym SYMBOL) *environment {
 func newGlobalEnvironment(e evaluator) *environment {
 	return &environment{
 		map[SYMBOL]lispVal{
-			// arithmetic operators
-			"+": add,
-			"-": sub,
-			"*": mul,
-			"/": div,
-			"%": mod,
-			// comparisons
+			// higher order functions
+			// NOTE :: using LISP versions in prelude.go
+			// "map":    mapfunc,
+			// "filter": filter,
+			// "foldl":  foldl,
+			// sequence functions
+			"+":      add,
+			"-":      sub,
+			"*":      mul,
+			"/":      div,
+			"%":      mod,
 			"<":      lessThan,
 			"<=":     lessThanOrEqual,
 			">":      greaterThan,
@@ -43,20 +48,13 @@ func newGlobalEnvironment(e evaluator) *environment {
 			"=":      equal,
 			"equal?": isEqual,
 			"null?":  null,
-			// LISP list manipulations
-			"cons": cons,
-			":":    cons,
-			"car":  car,
-			"head": car,
-			"cdr":  cdr,
-			"tail": cdr,
-			// higher order functions
-			// NOTE :: using LISP versions in prelude.go
-			// "map":    mapfunc,
-			// "filter": filter,
-			// "foldl":  foldl,
-			// sequence functions
-			"range": makeRange,
+			"cons":   cons,
+			":":      cons,
+			"car":    car,
+			"head":   car,
+			"cdr":    cdr,
+			"tail":   cdr,
+			"range":  makeRange,
 		},
 		nil,
 	}
