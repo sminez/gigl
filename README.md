@@ -42,3 +42,5 @@ LISP with goroutines? Sounds fun to me!
 `http://www.nada.kth.se/kurser/su/DA2001/sudata16/examination/schemeCheatsheet.pdf`
 `http://www.gigamonkeys.com/book/macros-standard-control-constructs.html`
 `http://www.lispworks.com/documentation/HyperSpec/Body/f_mapc_.htm`
+`https://stackoverflow.com/questions/15939122/how-to-rewrite-let-in-terms-of-lambda`
+`http://trac.sacrideo.us/wg/wiki/R7RSHomePage`

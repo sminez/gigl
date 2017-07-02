@@ -1,10 +1,10 @@
 package gigl
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 	"strings"
+
+	"github.com/chzyer/readline"
 )
 
 var (
@@ -15,38 +15,59 @@ var (
 )
 
 // REPL is the read-eval-print-loop
-// TODO: look at https://github.com/chzyer/readline
 func REPL() {
-	scanner := bufio.NewScanner(os.Stdin)
 	evaluator := NewEvaluator()
 
-	fmt.Printf("((Welcome to GIGL!)\n  (Loading prelude...)\n")
 	// Load the prelude
+	fmt.Printf("((Welcome to GIGL!)\n  (Loading prelude...)\n")
 	for _, proc := range prelude {
 		evaluator.eval(read(proc), nil)
 	}
 	fmt.Println("  (...done!))")
 
+	rl, err := readline.NewEx(&readline.Config{
+		Prompt:                 InPrompt,
+		HistoryFile:            "/tmp/gigl-repl",
+		DisableAutoSaveHistory: true,
+	})
+
+	// If we can't create the REPL we're boned...
+	if err != nil {
+		panic(err)
+	}
+	defer rl.Close()
+
+	previousInput := ""
+
 	for {
-		prevInput = ""
-		fmt.Print(InPrompt)
+		input, err := rl.Readline()
+		if err != nil {
+			fmt.Println(err)
+			break
+		}
 
-		for {
-			scanner.Scan()
-			input = prevInput + " " + scanner.Text()
+		// Prepend the previous user input if there is any
+		if previousInput != "" {
+			input = previousInput + " " + input
+		}
 
-			if len(input) > 0 {
-				if hasMatchingParens(input) {
-					result, err := evaluator.eval(read(input), nil)
-					if err != nil {
-						fmt.Printf("ERROR => %v\n\n", err)
-					} else {
-						fmt.Println(OutPrompt, String(result))
-					}
-					break
-				} else {
-					prevInput = input
-					fmt.Print(OutPrompt)
+		if len(input) > 0 {
+			if !hasMatchingParens(input) {
+				rl.SetPrompt(OutPrompt)
+				previousInput = input
+				continue
+			}
+
+			rl.SetPrompt(InPrompt)
+			rl.SaveHistory(input)
+
+			result, err := evaluator.eval(read(input), nil)
+			if err != nil {
+				fmt.Printf("ERROR => %v\n\n", err)
+			} else {
+				res := String(result)
+				if res != "" {
+					fmt.Println(OutPrompt, res)
 				}
 			}
 		}
