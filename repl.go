@@ -9,7 +9,7 @@ import (
 
 var (
 	InPrompt  = "λ > "
-	OutPrompt = "... "
+	OutPrompt = "   "
 	input     string
 	prevInput string
 )
@@ -39,7 +39,7 @@ func REPL() {
 				if hasMatchingParens(input) {
 					result, err := evaluator.eval(read(input), nil)
 					if err != nil {
-						fmt.Println(err)
+						fmt.Printf("ERROR => %v\n\n", err)
 					} else {
 						fmt.Println(OutPrompt, String(result))
 					}

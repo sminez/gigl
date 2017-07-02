@@ -30,12 +30,6 @@ func (e *environment) find(sym SYMBOL) *environment {
 func newGlobalEnvironment(e evaluator) *environment {
 	return &environment{
 		map[SYMBOL]lispVal{
-			// higher order functions
-			// NOTE :: using LISP versions in prelude.go
-			// "map":    mapfunc,
-			// "filter": filter,
-			// "foldl":  foldl,
-			// sequence functions
 			"+":      add,
 			"-":      sub,
 			"*":      mul,
@@ -46,15 +40,20 @@ func newGlobalEnvironment(e evaluator) *environment {
 			">":      greaterThan,
 			">=":     greaterThanOrEqual,
 			"=":      equal,
-			"equal?": isEqual,
+			"!=":     notEqual,
+			"eq?":    isEqual,
 			"null?":  null,
-			"cons":   cons,
-			":":      cons,
 			"car":    car,
 			"head":   car,
 			"cdr":    cdr,
 			"tail":   cdr,
+			"cons":   Cons,   // defined in list.go
+			"append": Append, // defined in list.go
 			"range":  makeRange,
+			// NOTE :: now using LISP versions in prelude.go
+			// "map":    mapfunc,
+			// "filter": filter,
+			// "foldl":  foldl,
 		},
 		nil,
 	}

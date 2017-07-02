@@ -16,6 +16,10 @@ var (
 	reCompPure, _ = regexp.Compile(`-?\d+\.?\d*j`)
 	// reKeyword, _  = regexp.Compile(`:[^()[\]{}\s\#,\.]+(?=[\)\]}\s])?`)
 	// reSymbol, _   = regexp.Compile(`[^()[\]{}\s\#,\.]+(?=[\)\]}\s])?`)
+	quotes = map[string]SYMBOL{
+		"'": SYMBOL("quote"), "`": SYMBOL("quasiquote"),
+		",": SYMBOL("unquote"), ",@": SYMBOL("unquote-splicing"),
+	}
 )
 
 // read a string and convert it to values we can work with
@@ -24,14 +28,19 @@ func read(s string) lispVal {
 	return parse(&tokens)
 }
 
-// split an input string into individual tokens, padding around parens
+// split an input string into individual tokens, padding around parens & quotes
+// This should probably be replaced with proper tokenisation using regex...
 func tokenise(s string) []string {
-	s = strings.Replace(s, "(", "( ", -1)
-	s = strings.Replace(s, ")", " )", -1)
-	s = strings.Replace(s, "[", "[ ", -1)
-	s = strings.Replace(s, "]", " ]", -1)
-	s = strings.Replace(s, "{", "{ ", -1)
-	s = strings.Replace(s, "}", " }", -1)
+	s = strings.Replace(s, "(", " ( ", -1)
+	s = strings.Replace(s, ")", " ) ", -1)
+	// s = strings.Replace(s, "[", "[ ", -1)
+	// s = strings.Replace(s, "]", " ]", -1)
+	// s = strings.Replace(s, "{", "{ ", -1)
+	// s = strings.Replace(s, "}", " }", -1)
+	s = strings.Replace(s, "'", " ' ", -1)
+	s = strings.Replace(s, "`", " ` ", -1)
+	s = strings.Replace(s, ",", " , ", -1)
+	s = strings.Replace(s, ", @", " ,@ ", -1)
 
 	split := strings.Split(s, " ")
 	tokens := make([]string, 0)
@@ -65,6 +74,13 @@ func parse(tokens *[]string) lispVal {
 		// Slice off that last paren
 		*tokens = (*tokens)[1:]
 		return List(lst...)
+
+	case "'", "`", ",", ",@":
+		// Something is being quoted or unquoted
+		quotedList := make([]lispVal, 0)
+		quotedList = append(quotedList, quotes[token])
+		quotedList = append(quotedList, parse(tokens))
+		return List(quotedList...)
 
 	default:
 		// if it"s not a list then it"s an atom

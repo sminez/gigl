@@ -41,7 +41,7 @@ func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 		}
 		return nil, fmt.Errorf("Unknown symbol: %v", expr)
 
-	case LispList:
+	case *LispList:
 		// Pull off the head of the list and see what we need to do
 		head, rest := expr.popHead()
 		head, ok := head.(SYMBOL)
@@ -54,6 +54,19 @@ func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 		case "quote":
 			// return the second element of the list unevaluated
 			return rest.Head(), nil
+
+		case "quasiquote":
+			// recursively expand any quasi-quoted expressions
+			return e.expandQuasiQuote(rest.Head(), env)
+			// if err != nil {
+			// 	return nil, err
+			// }
+			// return unquotedExp, nil
+			// return e.eval(unquotedExp, env)
+
+		case "unquote", "unquote-splicing":
+			// This is handled inside of expandQuasiQuote
+			return nil, fmt.Errorf("Cannot unquote outside of a quasi-quoted expression.")
 
 		case "if":
 			// Evaluate the conditional and cast to a bool
@@ -188,18 +201,107 @@ func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 	}
 }
 
+// Expand quasi-quotes: expand `x -> 'x   `,x -> x   `(,@x y) -> (append x y)
+func (e *evaluator) expandQuasiQuote(expression lispVal, env *environment) (lispVal, error) {
+	switch expr := expression.(type) {
+	case *LispList:
+		// Make sure we aren't splicing a list into the head position of the new list
+		if expr.Head() == SYMBOL("unquote-splicing") {
+			return nil, fmt.Errorf("Can't splice at the head of a list: %v", expr)
+		}
+
+		// Collecting things up in a slice is conceptually easier to think about
+		// when compared the repeated appends of lists or cons -> reverse.
+		expandedList := make([]lispVal, 0)
+
+		// Iterate through the terms and evaluate anything that has been unquoted
+		element, originalList := expr.popHead()
+		for {
+			if originalList.Len() == 0 && element == nil {
+				return List(expandedList...), nil
+			}
+
+			switch element.(type) {
+			case *LispList:
+				if element.(*LispList).Len() < 2 {
+					expandedList = append(expandedList, element)
+				} else {
+					head, tail := element.(*LispList).popHead()
+					switch head {
+					case SYMBOL("unquote"):
+						// Check that we actually have something to unquote
+						if tail.Len() == 0 {
+							return nil, fmt.Errorf("Unquoting error: %v", expr)
+						}
+						// Pop off the head and evaulate it
+						toUnquote := tail.Head()
+						unquotedElement, err := e.eval(toUnquote, env)
+						if err != nil {
+							return nil, err
+						}
+						// If everything looks good, add it to the resulting list
+						expandedList = append(expandedList, unquotedElement)
+
+					case SYMBOL("unquote-splicing"):
+						// Check that we actually have something to unquote
+						if tail.Len() == 0 {
+							return nil, fmt.Errorf("Unquoting error: %v", expr)
+						}
+						// Pop off the head and evaulate it
+						toUnquote := tail.Head()
+						unquotedElements, err := e.eval(toUnquote, env)
+						if err != nil {
+							return nil, err
+						}
+						unquotedElements, ok := unquotedElements.(*LispList)
+						if !ok {
+							return nil, fmt.Errorf("Cannot call unquote-splicing on non-list: %v", unquotedElements)
+						}
+						// If everything looks good, add it to the resulting list
+						expandedList = append(expandedList, unquotedElements.(*LispList).toSlice()...)
+					default:
+						// append the element unevaluated
+						expandedList = append(expandedList, element)
+					}
+				}
+			default:
+				// append the element unevaluated
+				expandedList = append(expandedList, element)
+			}
+			element, originalList = originalList.popHead()
+		}
+
+	default:
+		// Still quote any un-marked forms for quoting
+		return List(SYMBOL("quote"), expression), nil
+	}
+}
+
 // apply a procedure to a list of arguments and return the result
 // NOTE: built-in/primative operations will execute without any outer environment,
 //		 procedures will bind their arguments before executing their statements.
 func (e *evaluator) apply(proc lispVal, args []lispVal) (lispVal, error) {
 	switch p := proc.(type) {
 	case func(...lispVal) (lispVal, error):
-		// This is a built-in/primitive variadic-function
 		return p(args...)
 
 	case func(...lispVal) (bool, error):
-		// This is a built-in/primitive comparison function
 		return p(args...)
+
+	case func(lispVal, *LispList) *LispList:
+		switch lst := args[1].(type) {
+		case LispList:
+			return p(args[0], &lst), nil
+
+		case *LispList:
+			return p(args[0], lst), nil
+
+		default:
+			return nil, fmt.Errorf("Not a list: %v", args[1])
+		}
+
+	case func(*LispList, *LispList) *LispList:
+		return p(args[0].(*LispList), args[1].(*LispList)), nil
 
 	case procedure:
 		// This is a LISP procedure so create a new nested environment
@@ -225,6 +327,6 @@ func (e *evaluator) apply(proc lispVal, args []lispVal) (lispVal, error) {
 		return e.eval(p.body, innerEnv)
 
 	default:
-		return nil, fmt.Errorf("Unknown procedure type: %v", p)
+		return nil, fmt.Errorf("Unknown procedure type: %v\n%v", p, args)
 	}
 }

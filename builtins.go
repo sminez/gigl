@@ -207,6 +207,18 @@ func equal(lst ...lispVal) (lispVal, error) {
 	return a == b, nil
 }
 
+func notEqual(lst ...lispVal) (lispVal, error) {
+	a, err := getFloat(lst[0])
+	if err != nil {
+		return nil, err
+	}
+	b, err := getFloat(lst[1])
+	if err != nil {
+		return nil, err
+	}
+	return a != b, nil
+}
+
 func isEqual(lst ...lispVal) (lispVal, error) {
 	return reflect.DeepEqual(lst[0], lst[1]), nil
 }
@@ -227,7 +239,7 @@ func null(lst ...lispVal) (lispVal, error) {
 func cons(lst ...lispVal) (lispVal, error) {
 	switch lst[1].(type) {
 	case []lispVal:
-		return append([]lispVal{lst[0]}, lst[1].([]lispVal)...), nil
+		return List(append([]lispVal{lst[0]}, lst[1].([]lispVal)...)...), nil
 	default:
 		return nil, fmt.Errorf("The second argument to cons must be a list")
 	}
@@ -235,20 +247,30 @@ func cons(lst ...lispVal) (lispVal, error) {
 
 // return the first element of a list
 func car(lst ...lispVal) (lispVal, error) {
-	l, ok := lst[0].([]lispVal)
+	// l, ok := lst[0].([]lispVal)
+	// if !ok {
+	// 	return nil, fmt.Errorf("car called on an atom")
+	// }
+	// return l[0], nil
+	l, ok := lst[0].(*LispList)
 	if !ok {
 		return nil, fmt.Errorf("car called on an atom")
 	}
-	return l[0], nil
+	return l.Head(), nil
 }
 
 // everything but the first element of a list
 func cdr(lst ...lispVal) (lispVal, error) {
-	l, ok := lst[0].([]lispVal)
+	// l, ok := lst[0].([]lispVal)
+	// if !ok {
+	// 	return nil, fmt.Errorf("cdr called on an atom")
+	// }
+	// return List(l[1:]), nil
+	l, ok := lst[0].(*LispList)
 	if !ok {
 		return nil, fmt.Errorf("cdr called on an atom")
 	}
-	return l[1:], nil
+	return l.Tail(), nil
 }
 
 /*
@@ -310,5 +332,5 @@ func makeRange(args ...lispVal) (lispVal, error) {
 	for i := range r {
 		r[i] = float64(min + (step * int64(i)))
 	}
-	return r, nil
+	return List(r...), nil
 }

@@ -105,7 +105,7 @@ func makeProc(params, body lispVal, env *environment, e *evaluator) (func(...lis
 				innerEnv.vals[param.(SYMBOL)] = args[i]
 			}
 
-		case LispList:
+		case *LispList:
 			// Bind a list of paramaters into the new environment
 			for i, param := range params.toSlice() {
 				innerEnv.vals[param.(SYMBOL)] = args[i]
