@@ -1,7 +1,7 @@
 package gigl
 
 import (
-	"log"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -86,7 +86,7 @@ func parse(tokens *[]string) lispVal {
 		// if it"s not a list then it"s an atom
 		atom, err := makeAtom(token)
 		if err != nil {
-			log.Println(err)
+			fmt.Println("PARSE ERROR => ", err)
 			return nil
 		}
 		return atom
