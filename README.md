@@ -45,3 +45,4 @@ LISP with goroutines? Sounds fun to me!
 `https://stackoverflow.com/questions/15939122/how-to-rewrite-let-in-terms-of-lambda`
 `http://trac.sacrideo.us/wg/wiki/R7RSHomePage`
 `https://www.gnu.org/software/mit-scheme/documentation/mit-scheme-ref/Overview.html#Overview`
+`https://github.com/JeffBezanson/femtolisp/tree/master/lib`

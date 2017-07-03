@@ -59,11 +59,6 @@ func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 			case "quasiquote":
 				// recursively expand any quasi-quoted expressions
 				return e.expandQuasiQuote(rest.Head(), env)
-				// if err != nil {
-				// 	return nil, err
-				// }
-				// return unquotedExp, nil
-				// return e.eval(unquotedExp, env)
 
 			case "unquote", "unquote-splicing":
 				// This is handled inside of expandQuasiQuote
@@ -173,6 +168,21 @@ func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 				}
 				// Loop back to evaluate the last form and return it
 				expression = rest.Head()
+
+			case "apply":
+				symProc, listArgs := rest.popHead()
+				proc, err := e.eval(symProc, env)
+
+				if err != nil {
+					return nil, err
+				}
+
+				args, err := e.eval(listArgs.Head(), env)
+				if err != nil {
+					return nil, err
+				}
+
+				return e.apply(proc, args.(*LispList).toSlice())
 
 			default:
 				// Assume that the head is a callable and that the remaining
