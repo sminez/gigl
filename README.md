@@ -44,3 +44,4 @@ LISP with goroutines? Sounds fun to me!
 `http://www.lispworks.com/documentation/HyperSpec/Body/f_mapc_.htm`
 `https://stackoverflow.com/questions/15939122/how-to-rewrite-let-in-terms-of-lambda`
 `http://trac.sacrideo.us/wg/wiki/R7RSHomePage`
+`https://www.gnu.org/software/mit-scheme/documentation/mit-scheme-ref/Overview.html#Overview`

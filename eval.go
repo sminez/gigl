@@ -29,7 +29,7 @@ func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 	}
 
 	switch expr := expression.(type) {
-	case float64, string, bool:
+	case float64, string, bool, KEYWORD:
 		// Just return the value as is
 		return expr, nil
 
@@ -171,6 +171,18 @@ func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 				}
 			}
 			return result, nil
+
+		// case "apply":
+		// 	// apply a function to a list of args
+		// 	// (apply + '(1 2 3))
+		// 	head, rest = rest.popHead()
+		// 	args := rest.Head() // need to pull out the args from the list
+		// 	rest, ok = args.(*LispList)
+		// 	if !ok {
+		// 		return nil, fmt.Errorf("Second argument to apply must be a list.")
+		// 	}
+		// 	fmt.Println(rest)
+		// 	fallthrough
 
 		default:
 			// Assume that the head is a callable and that the remaining

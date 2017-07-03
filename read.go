@@ -23,7 +23,7 @@ var (
 )
 
 // read a string and convert it to values we can work with
-func read(s string) lispVal {
+func read(s string) (lispVal, error) {
 	tokens := tokenise(s)
 	return parse(&tokens)
 }
@@ -56,7 +56,11 @@ func tokenise(s string) []string {
 
 // parse the token stream and convert to values
 // NOTE :: at present, this will only parse a single, complete s-expression
-func parse(tokens *[]string) lispVal {
+func parse(tokens *[]string) (lispVal, error) {
+	if len(*tokens) == 0 {
+		return nil, fmt.Errorf("Syntax error")
+	}
+
 	// NOTE :: need to dereference tokens so we can slice
 	token := (*tokens)[0]
 	*tokens = (*tokens)[1:]
@@ -66,30 +70,36 @@ func parse(tokens *[]string) lispVal {
 		// Start of a list so recuse and build it up
 		lst := make([]lispVal, 0)
 		for (*tokens)[0] != ")" {
-			nextToken := parse(tokens)
+			nextToken, err := parse(tokens)
+			if err != nil {
+				return nil, err
+			}
 			if nextToken != SYMBOL("") {
 				lst = append(lst, nextToken)
 			}
 		}
 		// Slice off that last paren
 		*tokens = (*tokens)[1:]
-		return List(lst...)
+		return List(lst...), nil
 
 	case "'", "`", ",", ",@":
 		// Something is being quoted or unquoted
 		quotedList := make([]lispVal, 0)
 		quotedList = append(quotedList, quotes[token])
-		quotedList = append(quotedList, parse(tokens))
-		return List(quotedList...)
+		parsed, err := parse(tokens)
+		if err != nil {
+			return nil, err
+		}
+		quotedList = append(quotedList, parsed)
+		return List(quotedList...), nil
 
 	default:
 		// if it"s not a list then it"s an atom
 		atom, err := makeAtom(token)
 		if err != nil {
-			fmt.Println("PARSE ERROR => ", err)
-			return nil
+			return nil, err
 		}
-		return atom
+		return atom, nil
 	}
 }
 
@@ -118,6 +128,9 @@ func makeAtom(token string) (lispVal, error) {
 	// 	return SYMBOL(token), nil
 
 	default:
+		if token[0] == ':' {
+			return KEYWORD(token[1:]), nil
+		}
 		return SYMBOL(token), nil
 		// return token, fmt.Errorf("Unable to parse input: %v", token)
 	}

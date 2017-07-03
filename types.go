@@ -30,6 +30,9 @@ func String(val lispVal) string {
 	case string:
 		return fmt.Sprintf("\"%v\"", val)
 
+	case KEYWORD:
+		return fmt.Sprintf(":%v", val)
+
 	case float64:
 		// Try to print ints correctly
 		i := int64(val)

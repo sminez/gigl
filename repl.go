@@ -21,7 +21,11 @@ func REPL() {
 	// Load the prelude
 	fmt.Printf("((Welcome to GIGL!)\n  (Loading prelude...)\n")
 	for _, proc := range prelude {
-		evaluator.eval(read(proc), nil)
+		parsed, err := read(proc)
+		if err != nil {
+			panic(fmt.Sprint("Error in prelude!\n%v", err))
+		}
+		evaluator.eval(parsed, nil)
 	}
 	fmt.Println("  (...done!))")
 
@@ -61,21 +65,29 @@ func REPL() {
 			rl.SetPrompt(InPrompt)
 			rl.SaveHistory(input)
 
-			result, err := evaluator.eval(read(input), nil)
-			if err != nil {
-				fmt.Printf("ERROR => %v\n\n", err)
+			parsed, parseErr := read(input)
+			if parseErr != nil {
+				fmt.Printf("PARSE ERROR:\n%v\n=> %v\n\n", input, parseErr)
+				previousInput = ""
+				continue
+			}
+			result, evalErr := evaluator.eval(parsed, nil)
+			if evalErr != nil {
+				fmt.Printf("ERROR => %v\n\n", evalErr)
+				previousInput = ""
 			} else {
 				res := String(result)
 				if res != "" {
 					fmt.Println(OutPrompt, res)
 				}
+				previousInput = ""
 			}
 		}
 	}
 }
 
 // Check that we have a complete s-expression
-// NOTE :: This _will_ fail if string literals have unmatched parens
+// NOTE :: This _will_ fail if string literals have unmatched parens...
 func hasMatchingParens(input string) bool {
 	parenOpen := strings.Count(input, "(")
 	parenClose := strings.Count(input, ")")
