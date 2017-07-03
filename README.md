@@ -15,7 +15,7 @@ LISP with goroutines? Sounds fun to me!
 - [ ] cond
 - [ ] for-each
 - [x] larger prelude
-- [ ] Tail call optimisation
+- [x] Tail call optimisation
 - [ ] lazy streams
   - See http://blog.thezerobit.com/2012/07/28/lazy-sequences-in-common-lisp.html
   - https://docs.racket-lang.org/reference/streams.html
