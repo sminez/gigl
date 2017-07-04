@@ -38,7 +38,7 @@ func (l *LispList) Head() lispVal {
 	if l.root != nil {
 		return l.root.Value
 	}
-	return nil
+	return &LispList{}
 }
 
 // Tail return a new list comprising of all elements but the first
@@ -80,21 +80,6 @@ func (l LispList) String() string {
 // Len returns the length of a list
 func (l *LispList) Len() int {
 	return l.length
-}
-
-// Construct a new list by prepending a new element
-func Cons(v lispVal, lst *LispList) *LispList {
-	newList := NewList(v)
-	newList.root.next = lst.root
-	newList.length = lst.length + 1
-	return newList
-}
-
-func Append(l1, l2 *LispList) *LispList {
-	s1 := l1.toSlice()
-	s2 := l2.toSlice()
-	s := append(s1, s2...)
-	return List(s...)
 }
 
 // List is a repeated cons to build up a list

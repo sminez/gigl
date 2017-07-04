@@ -14,6 +14,7 @@ var (
 	reInt, _      = regexp.Compile(`-?\d+`)
 	reComp, _     = regexp.Compile(`-?\d+\.?\d*[+-]\d+\.?\d*j`)
 	reCompPure, _ = regexp.Compile(`-?\d+\.?\d*j`)
+	reParen, _    = regexp.Compile(`[(){}\[\]]`)
 	// reKeyword, _  = regexp.Compile(`:[^()[\]{}\s\#,\.]+(?=[\)\]}\s])?`)
 	// reSymbol, _   = regexp.Compile(`[^()[\]{}\s\#,\.]+(?=[\)\]}\s])?`)
 	quotes = map[string]SYMBOL{

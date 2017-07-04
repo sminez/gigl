@@ -123,7 +123,11 @@ func makeProc(params, body lispVal, env *environment, e *evaluator) (func(...lis
 		if err != nil {
 			return nil, err
 		}
-		return result, nil
+		if resultSlice, ok := result.([]lispVal); ok {
+			return List(resultSlice...), nil
+		} else {
+			return result, nil
+		}
 	}
 	return proc, nil
 }

@@ -35,6 +35,7 @@ func newGlobalEnvironment(e evaluator) *environment {
 			"*":      mul,
 			"/":      div,
 			"%":      mod,
+			"modulo": mod,
 			"<":      lessThan,
 			"<=":     lessThanOrEqual,
 			">":      greaterThan,
@@ -47,13 +48,10 @@ func newGlobalEnvironment(e evaluator) *environment {
 			"head":   car,
 			"cdr":    cdr,
 			"tail":   cdr,
-			"cons":   Cons,   // defined in list.go
-			"append": Append, // defined in list.go
+			"len":    listLength,
+			"cons":   cons,
+			"append": lispAppend,
 			"range":  makeRange,
-			// NOTE :: now using LISP versions in prelude.go
-			// "map":    mapfunc,
-			// "filter": filter,
-			// "foldl":  foldl,
 		},
 		nil,
 	}

@@ -224,34 +224,51 @@ func isEqual(lst ...lispVal) (lispVal, error) {
 }
 
 func null(lst ...lispVal) (lispVal, error) {
-	list, ok := lst[0].([]lispVal)
+	list, ok := lst[0].(*LispList)
 	if !ok {
+		fmt.Println(list)
 		return nil, fmt.Errorf("null? can only be called on lists")
 	}
-	return len(list) == 0, nil
+	return list.Len() == 0, nil
 }
 
 /*
 	LISP list manipulations
 */
 
-// construct a new list by prepending the new element
+// Construct a new list by prepending a new element
 func cons(lst ...lispVal) (lispVal, error) {
-	switch lst[1].(type) {
-	case []lispVal:
-		return List(append([]lispVal{lst[0]}, lst[1].([]lispVal)...)...), nil
-	default:
+	newList := NewList(lst[0])
+	oldList, ok := lst[1].(*LispList)
+	if !ok {
 		return nil, fmt.Errorf("The second argument to cons must be a list")
 	}
+	newList.root.next = oldList.root
+	newList.length = oldList.length + 1
+	return newList, nil
+}
+
+// Append two lists together, creating a new list
+func lispAppend(lst ...lispVal) (lispVal, error) {
+	// extract all of the elements
+	l1, ok := lst[0].(*LispList)
+	if !ok {
+		return nil, fmt.Errorf("The first argument to append must be a list")
+	}
+	s1 := l1.toSlice()
+
+	var s2 []lispVal
+	switch lst[1].(type) {
+	case *LispList:
+		s2 = lst[1].(*LispList).toSlice()
+	default:
+		s2 = []lispVal{lst[1]}
+	}
+	return List(append(s1, s2...)...), nil
 }
 
 // return the first element of a list
 func car(lst ...lispVal) (lispVal, error) {
-	// l, ok := lst[0].([]lispVal)
-	// if !ok {
-	// 	return nil, fmt.Errorf("car called on an atom")
-	// }
-	// return l[0], nil
 	l, ok := lst[0].(*LispList)
 	if !ok {
 		return nil, fmt.Errorf("car called on an atom")
@@ -261,16 +278,20 @@ func car(lst ...lispVal) (lispVal, error) {
 
 // everything but the first element of a list
 func cdr(lst ...lispVal) (lispVal, error) {
-	// l, ok := lst[0].([]lispVal)
-	// if !ok {
-	// 	return nil, fmt.Errorf("cdr called on an atom")
-	// }
-	// return List(l[1:]), nil
 	l, ok := lst[0].(*LispList)
 	if !ok {
 		return nil, fmt.Errorf("cdr called on an atom")
 	}
 	return l.Tail(), nil
+}
+
+// length of a list
+func listLength(lst ...lispVal) (lispVal, error) {
+	l, ok := lst[0].(*LispList)
+	if !ok {
+		return nil, fmt.Errorf("len called on an atom")
+	}
+	return float64(l.Len()), nil
 }
 
 /*

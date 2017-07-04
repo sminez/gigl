@@ -7,12 +7,14 @@ package gigl
 import "fmt"
 
 type evaluator struct {
-	globalEnv *environment
+	globalEnv  *environment
+	macroTable map[SYMBOL]lispVal
 }
 
 func NewEvaluator() *evaluator {
 	e := evaluator{}
 	e.globalEnv = newGlobalEnvironment(e)
+	e.macroTable = make(map[SYMBOL]lispVal)
 	return &e
 }
 
@@ -47,8 +49,26 @@ func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 			head, rest := expr.popHead()
 			head, ok := head.(SYMBOL)
 			if !ok {
-				err = fmt.Errorf("Unknown procedure: %v", expr)
-				return nil, err
+				// We need to evaluate the head and apply it
+				head, err = e.eval(expr.Head(), env)
+				if err != nil {
+					err = fmt.Errorf("Unknown procedure: %v", head)
+					return nil, err
+				}
+				args, err := e.getArgs(rest, env)
+				if err != nil {
+					return nil, err
+				}
+				return e.apply(head, args)
+			}
+
+			// check for known macros
+			if macro, known := e.macroTable[head.(SYMBOL)]; known {
+				expression, err = e.apply(macro, rest.toSlice())
+				if err != nil {
+					return nil, err
+				}
+				return e.eval(expression, e.globalEnv)
 			}
 
 			switch head.(SYMBOL) {
@@ -60,9 +80,9 @@ func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 				// recursively expand any quasi-quoted expressions
 				return e.expandQuasiQuote(rest.Head(), env)
 
-			case "unquote", "unquote-splicing":
-				// This is handled inside of expandQuasiQuote
-				return nil, fmt.Errorf("Cannot unquote outside of a quasi-quoted expression.")
+			// case "unquote", "unquote-splicing":
+			// 	// This is handled inside of expandQuasiQuote
+			// 	return nil, fmt.Errorf("Cannot unquote outside of a quasi-quoted expression.")
 
 			case "if":
 				// Evaluate the conditional and cast to a bool
@@ -82,6 +102,42 @@ func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 						return e.eval(falseBranch, env)
 					}
 					return nil, nil
+				}
+
+			case "cond":
+				valBranch, rest := rest.popHead()
+				branch, ok := valBranch.(*LispList)
+				if !ok {
+					return nil, fmt.Errorf("Invalid cond branch: %v", branch)
+				}
+
+				for {
+					if rest.Len() == 0 && branch == nil {
+						return nil, nil
+					}
+					check, ifTrue := branch.Head(), branch.Tail().Head()
+					check, err := e.eval(check, env)
+					if err != nil {
+						return nil, err
+					}
+					switch check.(type) {
+					case bool:
+						if check.(bool) {
+							// evaluate the true branch
+							return e.eval(ifTrue, env)
+						}
+					case KEYWORD:
+						if check == KEYWORD("else") {
+							return e.eval(ifTrue, env)
+						} else {
+							return nil, fmt.Errorf("Invalid cond condition: %v", branch)
+						}
+					}
+					valBranch, rest = rest.popHead()
+					branch, ok = valBranch.(*LispList)
+					if !ok {
+						return nil, fmt.Errorf("Invalid cond branch: %v", valBranch)
+					}
 				}
 
 			case "set!":
@@ -154,6 +210,30 @@ func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 					return nil, nil
 				}
 
+			case "defmacro":
+				if env != e.globalEnv {
+					return nil, fmt.Errorf("Macro definition is only allowed in the global scope.")
+				}
+				sym, rest := rest.popHead()
+				sym, ok := sym.(SYMBOL)
+				if !ok {
+					err = fmt.Errorf("Attempt to define non-symbol: %v", expr)
+					return nil, err
+				}
+				if _, ok := e.macroTable[sym.(SYMBOL)]; ok {
+					err = fmt.Errorf("Unable to redefine an existing macro.")
+					return nil, err
+				} else {
+					params, rest := rest.popHead()
+					body, rest := rest.popHead()
+					proc, err := makeProc(params, body, env, e)
+					if err != nil {
+						return nil, err
+					}
+					e.macroTable[sym.(SYMBOL)] = proc
+					return nil, nil
+				}
+
 			case "begin":
 				// Execute a collection of statements and return the
 				// value of the last statement.
@@ -187,19 +267,11 @@ func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 			default:
 				// Assume that the head is a callable and that the remaining
 				// elements of the list are paramaters.
-				var elem lispVal
-				args := make([]lispVal, rest.Len())
-
-				l := rest.Len()
-				for i := 0; i < l; i++ {
-					elem, rest = rest.popHead()
-					result, err := e.eval(elem, env)
-					if err != nil {
-						return nil, err
-					}
-					args[i] = result
-				}
 				proc, err := e.eval(head, env)
+				if err != nil {
+					return nil, err
+				}
+				args, err := e.getArgs(rest, env)
 				if err != nil {
 					return nil, err
 				}
@@ -249,30 +321,13 @@ func (e *evaluator) apply(proc lispVal, args []lispVal) (lispVal, error) {
 	case func(...lispVal) (lispVal, error):
 		return p(args...)
 
-	case func(...lispVal) (bool, error):
-		return p(args...)
-
-	case func(lispVal, *LispList) *LispList:
-		switch lst := args[1].(type) {
-		case LispList:
-			return p(args[0], &lst), nil
-
-		case *LispList:
-			return p(args[0], lst), nil
-
-		default:
-			return nil, fmt.Errorf("Not a list: %v", args[1])
-		}
-
-	case func(*LispList, *LispList) *LispList:
-		return p(args[0].(*LispList), args[1].(*LispList)), nil
-
 	default:
 		return nil, fmt.Errorf("Unknown procedure type: %v\n%v", p, args)
 	}
 }
 
 // Expand quasi-quotes: expand `x -> 'x   `,x -> x   `(,@x y) -> (append x y)
+// NOTE :: doesn't seem to be handling nested s-exps correctly
 func (e *evaluator) expandQuasiQuote(expression lispVal, env *environment) (lispVal, error) {
 	switch expr := expression.(type) {
 	case *LispList:
@@ -289,12 +344,14 @@ func (e *evaluator) expandQuasiQuote(expression lispVal, env *environment) (lisp
 		element, originalList := expr.popHead()
 		for {
 			if originalList.Len() == 0 && element == nil {
-				return List(expandedList...), nil
+				lst := List(expandedList...)
+				return lst, nil
 			}
 
 			switch element.(type) {
 			case *LispList:
 				if element.(*LispList).Len() < 2 {
+					// should this be Append?
 					expandedList = append(expandedList, element)
 				} else {
 					head, tail := element.(*LispList).popHead()
@@ -331,7 +388,11 @@ func (e *evaluator) expandQuasiQuote(expression lispVal, env *environment) (lisp
 						// If everything looks good, add it to the resulting list
 						expandedList = append(expandedList, unquotedElements.(*LispList).toSlice()...)
 					default:
-						// append the element unevaluated
+						// expand the list
+						element, err := e.expandQuasiQuote(element, env)
+						if err != nil {
+							return nil, err
+						}
 						expandedList = append(expandedList, element)
 					}
 				}
@@ -346,4 +407,20 @@ func (e *evaluator) expandQuasiQuote(expression lispVal, env *environment) (lisp
 		// Still quote any un-marked forms for quoting
 		return List(SYMBOL("quote"), expression), nil
 	}
+}
+
+func (e *evaluator) getArgs(lst *LispList, env *environment) ([]lispVal, error) {
+	var elem lispVal
+	args := make([]lispVal, lst.Len())
+
+	l := lst.Len()
+	for i := 0; i < l; i++ {
+		elem, lst = lst.popHead()
+		result, err := e.eval(elem, env)
+		if err != nil {
+			return nil, err
+		}
+		args[i] = result
+	}
+	return args, nil
 }
