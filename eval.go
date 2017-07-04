@@ -342,8 +342,9 @@ func (e *evaluator) expandQuasiQuote(expression lispVal, env *environment) (lisp
 
 		// Iterate through the terms and evaluate anything that has been unquoted
 		element, originalList := expr.popHead()
+
 		for {
-			if originalList.Len() == 0 && element == nil {
+			if originalList.Len() == 0 && (element == nil || isEmptyList(element)) {
 				lst := List(expandedList...)
 				return lst, nil
 			}

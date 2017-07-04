@@ -99,3 +99,12 @@ func List(vals ...lispVal) *LispList {
 	lst.length = len(vals)
 	return lst
 }
+
+// check if something is an empty list
+func isEmptyList(v lispVal) bool {
+	lst, ok := v.(*LispList)
+	if !ok {
+		return false
+	}
+	return lst.Len() == 0
+}
