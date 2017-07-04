@@ -6,7 +6,6 @@ LISP with goroutines? Sounds fun to me!
 
 # .: TODO :.
 --------------
-- [ ] fix broken strings due to simple tokenisation
 - [ ] fix broken quoting
 - [ ] let
 - [ ] Type checks
@@ -45,3 +44,4 @@ LISP with goroutines? Sounds fun to me!
 `https://github.com/justinethier/husk-scheme/tree/master/lib`
 
 `https://github.com/buntine/Simply-Scheme-Exercises`
+`https://golang.org/pkg/plugin/`

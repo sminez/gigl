@@ -60,6 +60,90 @@ func getFloat(l lispVal) (float64, error) {
 }
 
 /*
+	Type checks
+*/
+
+func isInt(lst ...lispVal) (lispVal, error) {
+	if len(lst) != 1 {
+		return nil, fmt.Errorf("Type check on non-atom: %v", lst)
+	}
+	f, ok := lst[0].(float64)
+	if !ok {
+		return false, nil
+	}
+	return float64(int64(f)) == f, nil
+}
+
+func isFloat(lst ...lispVal) (lispVal, error) {
+	if len(lst) != 1 {
+		return nil, fmt.Errorf("Type check on non-atom: %v", lst)
+	}
+	_, ok := lst[0].(float64)
+	return ok, nil
+}
+
+func isString(lst ...lispVal) (lispVal, error) {
+	if len(lst) != 1 {
+		return nil, fmt.Errorf("Type check on non-atom: %v", lst)
+	}
+	_, ok := lst[0].(string)
+	return ok, nil
+}
+
+func isBool(lst ...lispVal) (lispVal, error) {
+	if len(lst) != 1 {
+		return nil, fmt.Errorf("Type check on non-atom: %v", lst)
+	}
+	_, ok := lst[0].(bool)
+	return ok, nil
+}
+
+func isSymbol(lst ...lispVal) (lispVal, error) {
+	if len(lst) != 1 {
+		return nil, fmt.Errorf("Type check on non-atom: %v", lst)
+	}
+	_, ok := lst[0].(SYMBOL)
+	return ok, nil
+}
+
+func isKeyword(lst ...lispVal) (lispVal, error) {
+	if len(lst) != 1 {
+		return nil, fmt.Errorf("Type check on non-atom: %v", lst)
+	}
+	_, ok := lst[0].(KEYWORD)
+	return ok, nil
+}
+
+// something is only a list if it contains items
+func isList(lst ...lispVal) (lispVal, error) {
+	if len(lst) != 1 {
+		return nil, fmt.Errorf("Type check on non-atom: %v", lst)
+	}
+	_, ok := lst[0].(*LispList)
+	return ok, nil
+}
+
+func isPair(lst ...lispVal) (lispVal, error) {
+	if len(lst) != 1 {
+		return nil, fmt.Errorf("Type check on non-atom: %v", lst)
+	}
+	l, ok := lst[0].(*LispList)
+	if !ok {
+		return false, nil
+	}
+	return l.Len() > 0, nil
+}
+
+func isNull(lst ...lispVal) (lispVal, error) {
+	list, ok := lst[0].(*LispList)
+	if !ok {
+		fmt.Println(list)
+		return nil, fmt.Errorf("null? can only be called on lists")
+	}
+	return list.Len() == 0, nil
+}
+
+/*
 	Arithmetic operations
 */
 
@@ -221,15 +305,6 @@ func notEqual(lst ...lispVal) (lispVal, error) {
 
 func isEqual(lst ...lispVal) (lispVal, error) {
 	return reflect.DeepEqual(lst[0], lst[1]), nil
-}
-
-func null(lst ...lispVal) (lispVal, error) {
-	list, ok := lst[0].(*LispList)
-	if !ok {
-		fmt.Println(list)
-		return nil, fmt.Errorf("null? can only be called on lists")
-	}
-	return list.Len() == 0, nil
 }
 
 /*
