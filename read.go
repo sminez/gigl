@@ -4,90 +4,125 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
-	"strings"
 )
 
 // Regex objects for constructing atoms
 // (Ensure that keywords and symbols contain valid characters)
-var (
-	reFloat, _    = regexp.Compile(`-?\d+\.\d+`)
-	reInt, _      = regexp.Compile(`-?\d+`)
-	reComp, _     = regexp.Compile(`-?\d+\.?\d*[+-]\d+\.?\d*j`)
-	reCompPure, _ = regexp.Compile(`-?\d+\.?\d*j`)
-	reParen, _    = regexp.Compile(`[(){}\[\]]`)
-	// reKeyword, _  = regexp.Compile(`:[^()[\]{}\s\#,\.]+(?=[\)\]}\s])?`)
-	// reSymbol, _   = regexp.Compile(`[^()[\]{}\s\#,\.]+(?=[\)\]}\s])?`)
-	quotes = map[string]SYMBOL{
-		"'": SYMBOL("quote"), "`": SYMBOL("quasiquote"),
-		",": SYMBOL("unquote"), ",@": SYMBOL("unquote-splicing"),
-	}
-)
-
-// read a string and convert it to values we can work with
-func read(s string) (lispVal, error) {
-	tokens := tokenise(s)
-	return parse(&tokens)
+var quotes = map[string]SYMBOL{
+	"'": SYMBOL("quote"), "`": SYMBOL("quasiquote"),
+	",": SYMBOL("unquote"), ",@": SYMBOL("unquote-splicing"),
 }
 
-// split an input string into individual tokens, padding around parens & quotes
-// This should probably be replaced with proper tokenisation using regex...
-func tokenise(s string) []string {
-	s = strings.Replace(s, "(", " ( ", -1)
-	s = strings.Replace(s, ")", " ) ", -1)
-	// s = strings.Replace(s, "[", "[ ", -1)
-	// s = strings.Replace(s, "]", " ]", -1)
-	// s = strings.Replace(s, "{", "{ ", -1)
-	// s = strings.Replace(s, "}", " }", -1)
-	s = strings.Replace(s, "'", " ' ", -1)
-	s = strings.Replace(s, "`", " ` ", -1)
-	s = strings.Replace(s, ",", " , ", -1)
-	s = strings.Replace(s, ", @", " ,@ ", -1)
+type tag struct {
+	name  string
+	regex *regexp.Regexp
+}
 
-	split := strings.Split(s, " ")
-	tokens := make([]string, 0)
+type token struct {
+	Tag  string
+	Text string
+}
 
-	// Remove empty strings
-	for _, token := range split {
-		if token != "" {
-			tokens = append(tokens, token)
+type Tokeniser struct {
+	tags   []tag
+	ix     int
+	tokens []token
+}
+
+func NewTokeniser() *Tokeniser {
+	return &Tokeniser{
+		tags: []tag{
+			tag{"OPENPAREN", regexp.MustCompile(`^\(`)},
+			tag{"CLOSEPAREN", regexp.MustCompile(`^\)`)},
+			tag{"OPENBRACKET", regexp.MustCompile(`^\[`)},
+			tag{"CLOSEBRACKET", regexp.MustCompile(`^\]`)},
+			tag{"OPENBRACE", regexp.MustCompile("^{")},
+			tag{"CLOSEBRACE", regexp.MustCompile("^}")},
+			tag{"COMPLEX", regexp.MustCompile(`^-?\d+\.?\d*[+-]\d+\.?\d*j`)},
+			tag{"COMPLEX_PURE", regexp.MustCompile(`^-?\d+\.?\d*j`)},
+			tag{"FLOAT", regexp.MustCompile(`^-?\d+\.\d+`)},
+			tag{"INT", regexp.MustCompile(`^-?\d+`)},
+			tag{"BOOL", regexp.MustCompile(`^#[tf]`)},
+			tag{"SPLICE", regexp.MustCompile("^,@")},
+			tag{"QUOTE", regexp.MustCompile("^['`,]")},
+			tag{"WHITESPACE", regexp.MustCompile(`^\s+`)},
+			tag{"STRING", regexp.MustCompile(`^"([^"]*)"`)},
+			tag{"KEYWORD", regexp.MustCompile("^:[^(){}\\[\\],'`@:; \t\n]*")},
+			tag{"SYMBOL", regexp.MustCompile("^[^(){}\\[\\],'`@:; \t\n]*")},
+			tag{"ERROR", regexp.MustCompile(".*")},
+		},
+	}
+}
+
+// Tokenise splits an input string into tokens for parsing
+func (t *Tokeniser) Tokenise(s string) {
+	t.tokens = make([]token, 0)
+	t.ix = 0
+
+	for len(s) > 0 {
+		for _, tag := range t.tags {
+			if loc := tag.regex.FindStringIndex(s); loc != nil {
+				if tag.name != "WHITESPACE" {
+					t.tokens = append(t.tokens, token{tag.name, s[loc[0]:loc[1]]})
+				}
+				s = s[loc[1]:]
+				break
+			}
 		}
 	}
-	return tokens
 }
 
-// parse the token stream and convert to values
-// NOTE :: at present, this will only parse a single, complete s-expression
-func parse(tokens *[]string) (lispVal, error) {
-	if len(*tokens) == 0 {
+// return the next token in the stream
+func (t *Tokeniser) NextToken() (token, error) {
+	if t.ix >= len(t.tokens) {
+		return token{}, fmt.Errorf("Ran out of tokens")
+	}
+	tok := t.tokens[t.ix]
+	t.ix++
+	return tok, nil
+}
+
+// Tokenise an input string and then parse the result
+func (t *Tokeniser) read(s string) (lispVal, error) {
+	t.Tokenise(s)
+	return t.parseTokens()
+}
+
+// Convert tokens into internal data structures
+func (t *Tokeniser) parseTokens() (lispVal, error) {
+	// Pull off the first token
+	token, err := t.NextToken()
+	if err != nil {
 		return nil, fmt.Errorf("Syntax error")
 	}
 
-	// NOTE :: need to dereference tokens so we can slice
-	token := (*tokens)[0]
-	*tokens = (*tokens)[1:]
-
-	switch token {
-	case "(":
+	switch token.Tag {
+	case "OPENPAREN":
 		// Start of a list so recuse and build it up
 		lst := make([]lispVal, 0)
-		for (*tokens)[0] != ")" {
-			nextToken, err := parse(tokens)
+		parsedToken, err := t.parseTokens()
+		for {
+			if parsedToken == "CLOSEPAREN" {
+				if err != nil {
+					return nil, fmt.Errorf("Syntax error")
+				}
+				return List(lst...), nil
+			}
+			lst = append(lst, parsedToken)
+			parsedToken, err = t.parseTokens()
 			if err != nil {
 				return nil, err
 			}
-			if nextToken != SYMBOL("") {
-				lst = append(lst, nextToken)
-			}
 		}
-		// Slice off that last paren
-		*tokens = (*tokens)[1:]
-		return List(lst...), nil
 
-	case "'", "`", ",", ",@":
+	case "CLOSEPAREN":
+		return "CLOSEPAREN", nil
+
+	case "QUOTE", "SPLICE":
 		// Something is being quoted or unquoted
 		quotedList := make([]lispVal, 0)
-		quotedList = append(quotedList, quotes[token])
-		parsed, err := parse(tokens)
+		quotedList = append(quotedList, quotes[token.Text])
+		parsed, err := t.parseTokens()
 		if err != nil {
 			return nil, err
 		}
@@ -106,33 +141,31 @@ func parse(tokens *[]string) (lispVal, error) {
 
 // makeAtom determines the correct type for an atom
 // This will need extending as and when more primative types are added
-func makeAtom(token string) (lispVal, error) {
-	switch {
-	case token[0] == '"' && token[len(token)-1] == '"':
-		return string(token[1 : len(token)-1]), nil
+func makeAtom(t token) (lispVal, error) {
+	switch t.Tag {
+	case "STRING":
+		return string(t.Text[1 : len(t.Text)-1]), nil
 
-	case reInt.MatchString(token), reFloat.MatchString(token):
-		f, _ := strconv.ParseFloat(token, 64)
+	case "INT", "FLOAT":
+		f, _ := strconv.ParseFloat(t.Text, 64)
 		return float64(f), nil
 
-	case token == "true", token == "#t":
-		return true, nil
+	case "COMPLEX", "COMPLEX_PURE":
+		return nil, fmt.Errorf("Complex numbers not implemented yet!")
 
-	case token == "false", token == "#f":
+	case "BOOL":
+		if t.Text == "#t" {
+			return true, nil
+		}
 		return false, nil
 
-	// case reKeyword.MatchString(token):
-	// 	log.Println("tis a keyword!")
-	// 	return KEYWORD(token[1:]), nil
+	case "KEYWORD":
+		return KEYWORD(t.Text[1:]), nil
 
-	// case reSymbol.MatchString(token):
-	// 	return SYMBOL(token), nil
+	case "SYMBOL":
+		return SYMBOL(t.Text), nil
 
 	default:
-		if token[0] == ':' {
-			return KEYWORD(token[1:]), nil
-		}
-		return SYMBOL(token), nil
-		// return token, fmt.Errorf("Unable to parse input: %v", token)
+		return nil, fmt.Errorf("Unable to parse input: %v", t.Text)
 	}
 }

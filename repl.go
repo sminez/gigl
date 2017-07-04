@@ -17,13 +17,14 @@ var (
 // REPL is the read-eval-print-loop
 func REPL() {
 	evaluator := NewEvaluator()
+	tokeniser := NewTokeniser()
 
 	// Load the prelude
 	fmt.Printf("((Welcome to GIGL!)\n  (Loading prelude...)\n")
 	for _, proc := range prelude {
-		parsed, err := read(proc)
+		parsed, err := tokeniser.read(proc)
 		if err != nil {
-			panic(fmt.Sprint("Error in prelude!\n%v", err))
+			panic(fmt.Sprintf("\n\nError in prelude!\n%v\n\n", err))
 		}
 		evaluator.eval(parsed, nil)
 	}
@@ -65,7 +66,7 @@ func REPL() {
 			rl.SetPrompt(InPrompt)
 			rl.SaveHistory(input)
 
-			parsed, parseErr := read(input)
+			parsed, parseErr := tokeniser.read(input)
 			if parseErr != nil {
 				fmt.Printf("PARSE ERROR:\n%v\n=> %v\n\n", input, parseErr)
 				previousInput = ""
