@@ -47,6 +47,7 @@ type matchPattern struct {
 	repeating   bool
 	hasEllipsis bool
 	pVars       *LispList
+	pattern     *LispList
 	varMap      *map[SYMBOL]lispVal
 }
 
@@ -117,6 +118,7 @@ func NewMatchPattern(ptrn *LispList) (*matchPattern, error) {
 		repeating:   false,
 		hasEllipsis: false,
 		varMap:      &varMap,
+		pattern:     ptrn,
 	}
 
 	// Collecting things up in a slice is conceptually easier to think about
