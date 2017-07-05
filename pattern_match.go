@@ -266,7 +266,6 @@ MATCHLOOP:
 					}
 
 					// Try the match again
-					// if !p.Matches(t) {
 					if !m.componentMatches(p, t) {
 						return false
 					}
@@ -284,10 +283,10 @@ MATCHLOOP:
 				// Update the master map
 				switch p.(type) {
 				case *pVar:
-					(*m.varMap)[p.(*pVar).symbol] = matchedVals
+					(*m.varMap)[p.(*pVar).symbol] = List(matchedVals...)
 				case *matchPattern:
 					for k, v := range subMap {
-						(*m.varMap)[k] = v
+						(*m.varMap)[k] = List(v...)
 					}
 				}
 				break MATCHLOOP
@@ -305,8 +304,10 @@ MATCHLOOP:
 }
 
 func (m *matchPattern) PrintMatch() {
-	fmt.Println("pVars:\t\t", m.pVars.String())
-	fmt.Println("match map:\t", m.varMap)
+	fmt.Println("match map:")
+	for k, v := range *(m.varMap) {
+		fmt.Printf("\t%v --> %v\n", k, v)
+	}
 }
 
 func getNext(pvars, targets *LispList) (matcher, *LispList, lispVal, *LispList, bool) {

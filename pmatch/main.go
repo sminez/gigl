@@ -8,9 +8,12 @@ import (
 
 func main() {
 	lst := gigl.List(
-		gigl.List(gigl.SYMBOL("a"), gigl.SYMBOL("b")),
-		gigl.SYMBOL("..."),
+		gigl.SYMBOL("let"),
+		gigl.List(gigl.List(gigl.SYMBOL("arg"), gigl.SYMBOL("val")), gigl.SYMBOL("...")),
+		gigl.SYMBOL("body"), gigl.SYMBOL("..."),
 	)
+
+	fmt.Println("Template: ", lst.String())
 
 	pat, err := gigl.NewMatchPattern(lst)
 	if err != nil {
@@ -18,7 +21,15 @@ func main() {
 		return
 	}
 
-	target := gigl.List(gigl.List(1, 2), gigl.List(3, 4), gigl.List(5, 6))
+	target := gigl.List(
+		gigl.SYMBOL("let"),
+		gigl.List(gigl.List(gigl.SYMBOL("a"), 2), gigl.List(gigl.SYMBOL("b"), 4), gigl.List(gigl.SYMBOL("c"), 6)),
+		gigl.List(
+			gigl.List(gigl.SYMBOL("do")), gigl.List(gigl.SYMBOL("some")),
+			gigl.List(gigl.SYMBOL("stuff!"))),
+	)
+
+	fmt.Println("Target: ", target.String())
 
 	matching := pat.Matches(target)
 	fmt.Println("Successful match: ", matching)
