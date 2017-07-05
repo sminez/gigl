@@ -25,6 +25,7 @@ type token struct {
 
 type Tokeniser struct {
 	tags   []tag
+	input  string
 	ix     int
 	tokens []token
 }
@@ -58,6 +59,7 @@ func NewTokeniser() *Tokeniser {
 func (t *Tokeniser) Tokenise(s string) {
 	t.tokens = make([]token, 0)
 	t.ix = 0
+	t.input = s
 
 	for len(s) > 0 {
 		for _, tag := range t.tags {
@@ -93,7 +95,7 @@ func (t *Tokeniser) parseTokens() (lispVal, error) {
 	// Pull off the first token
 	token, err := t.NextToken()
 	if err != nil {
-		return nil, fmt.Errorf("Syntax error")
+		return nil, fmt.Errorf("Syntax error: %v", t.input)
 	}
 
 	switch token.Tag {
@@ -131,11 +133,7 @@ func (t *Tokeniser) parseTokens() (lispVal, error) {
 
 	default:
 		// if it"s not a list then it"s an atom
-		atom, err := makeAtom(token)
-		if err != nil {
-			return nil, err
-		}
-		return atom, nil
+		return makeAtom(token)
 	}
 }
 

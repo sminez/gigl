@@ -18,24 +18,6 @@ var prelude = []string{
 	// TBH, these are a lot less archaic and easier to remember than c...r
 	"(defn last (lst) (cond ((null? lst) '()) ((= (len lst) 1) (car lst)) (:else (last (cdr lst)))))",
 	"(defn nth (n lst) (if (null? lst) '() (if (= n 0) (car lst) (nth (- n 1) (cdr lst)))))",
-	// Simple short circuiting boolean logic
-	"(defn not (x) (if x #f #t))",
-	"(defn or (lst) (if (null? lst) #f (if (car lst) #t (or (cdr lst)))))",
-	"(defn and (lst) (if (null? (cdr lst)) (car lst) (if (car lst) (and (cdr lst)) #f)))",
-	// Boolean checks
-	"(define zero? (curry = 0))",
-	"(define positive? (curry < 0))",
-	"(define +ve? (curry < 0))",
-	"(define negative? (curry > 0))",
-	"(define -ve? (curry > 0))",
-	"(defn even? (n) (= (% n 2) 0))",
-	"(defn odd? (n) (= (% n 2) 1))",
-	// these are useful for filters as otherwise the inequality is reversed and it
-	// get confusing --> (filter (>than 4) lst) == (filter (curry < 4) lst)
-	"(defn <than (n) (curry > n))",
-	"(defn <=to (n) (curry >= n))",
-	"(defn >than (n) (curry < n))",
-	"(defn >=to (n) (curry <= n))",
 	// Higher order functions
 	"(defn compose (f g) (λ (x) (f (g x))))",
 	"(defn repeat (f) (compose f f))",
@@ -55,6 +37,24 @@ var prelude = []string{
 	"(defn curry (f a) (λ (b) (f a b)))",
 	"(defn combine (f) (λ (x y) (if (null? x) '() (f (list (car x) (car y)) ((combine f) (cdr x) (cdr y))))))",
 	"(define zip (combine cons))",
+	// Simple short circuiting boolean logic
+	"(defn not (x) (if x #f #t))",
+	"(defn or (lst) (if (null? lst) #f (if (car lst) #t (or (cdr lst)))))",
+	"(defn and (lst) (if (null? (cdr lst)) (car lst) (if (car lst) (and (cdr lst)) #f)))",
+	// Boolean checks
+	"(defn zero? (n) (curry = 0))",
+	"(defn positive? (n) (if (float? n) (> n 0) #f))",
+	"(defn pos? (n) (if (float? n) (> n 0) #f))",
+	"(defn negative? (n) (if (float? n) (< n 0) #f))",
+	"(defn neg? (n) (if (float? n) (< n 0) #f))",
+	"(defn even? (n) (if (int? n) (= (% n 2) 0) #f))",
+	"(defn odd? (n) (if (int? n) (= (% n 2) 1) #f))",
+	// these are useful for filters as otherwise the inequality is reversed and it
+	// get confusing --> (filter (>than 4) lst) == (filter (curry < 4) lst)
+	"(defn <than (n) (curry > n))",
+	"(defn <=to (n) (curry >= n))",
+	"(defn >than (n) (curry < n))",
+	"(defn >=to (n) (curry <= n))",
 	// Scans and folds: fold and scan are left based and use the first element
 	// of their list argument as the accumulator.
 	// NOTE :: scans require a list based accumulator!

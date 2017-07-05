@@ -1,9 +1,5 @@
 package gigl
 
-/*
-	This is the main eval/apply loop as described in SICP
-*/
-
 import "fmt"
 
 type evaluator struct {
@@ -234,6 +230,9 @@ func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 					return nil, nil
 				}
 
+			// case "let":
+			// (let ((arg val) ...) (body ...)) => ((lambda (arg ...) (begin body ...)) val ...)
+
 			case "begin":
 				// Execute a collection of statements and return the
 				// value of the last statement.
@@ -322,7 +321,7 @@ func (e *evaluator) apply(proc lispVal, args []lispVal) (lispVal, error) {
 		return p(args...)
 
 	default:
-		return nil, fmt.Errorf("Unknown procedure type: %v\n%v", p, args)
+		return nil, fmt.Errorf("Unknown procedure type: %v\n%v", p)
 	}
 }
 

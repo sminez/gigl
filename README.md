@@ -6,6 +6,7 @@ LISP with goroutines? Sounds fun to me!
 
 # .: TODO :.
 --------------
+- [ ] make the list functions take a sequence interface
 - [ ] fix broken quoting
 - [ ] let
 - [ ] Type checks
