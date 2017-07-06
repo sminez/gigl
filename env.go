@@ -55,10 +55,11 @@ func newGlobalEnvironment(e evaluator) *environment {
 			"first":    car,
 			"cdr":      cdr,
 			"tail":     cdr,
-			"len":      listLength,
+			"len":      lispLength,
 			"cons":     cons,
 			"append":   lispAppend,
 			"range":    makeRange,
+			"str":      str,
 		},
 		nil,
 	}

@@ -261,7 +261,7 @@ func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 					return nil, err
 				}
 
-				return e.apply(proc, args.(*LispList).toSlice())
+				return e.apply(proc, []lispVal{args})
 
 			default:
 				// Assume that the head is a callable and that the remaining

@@ -143,6 +143,13 @@ func isNull(lst ...lispVal) (lispVal, error) {
 	return list.Len() == 0, nil
 }
 
+func str(lst ...lispVal) (lispVal, error) {
+	if len(lst) != 1 {
+		return nil, fmt.Errorf("Type conversion on list: %v", lst)
+	}
+	return String(lst[0]), nil
+}
+
 /*
 	Arithmetic operations
 */
@@ -361,12 +368,15 @@ func cdr(lst ...lispVal) (lispVal, error) {
 }
 
 // length of a list
-func listLength(lst ...lispVal) (lispVal, error) {
-	l, ok := lst[0].(*LispList)
-	if !ok {
-		return nil, fmt.Errorf("len called on an atom")
+func lispLength(lst ...lispVal) (lispVal, error) {
+	switch lst[0].(type) {
+	case string:
+		return len(lst[0].(string)), nil
+	case *LispList:
+		return float64(lst[0].(*LispList).Len()), nil
+	default:
+		return nil, fmt.Errorf("len called on a non-sequence")
 	}
-	return float64(l.Len()), nil
 }
 
 /*
