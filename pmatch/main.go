@@ -24,9 +24,8 @@ func main() {
 	target := gigl.List(
 		gigl.SYMBOL("let"),
 		gigl.List(gigl.List(gigl.SYMBOL("a"), 2), gigl.List(gigl.SYMBOL("b"), 4), gigl.List(gigl.SYMBOL("c"), 6)),
-		gigl.List(
-			gigl.List(gigl.SYMBOL("do")), gigl.List(gigl.SYMBOL("some")),
-			gigl.List(gigl.SYMBOL("stuff!"))),
+		gigl.List(gigl.SYMBOL("do")), gigl.List(gigl.SYMBOL("some")),
+		gigl.List(gigl.SYMBOL("stuff!")),
 	)
 
 	fmt.Println("Target: ", target.String())

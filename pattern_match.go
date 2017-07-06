@@ -48,7 +48,7 @@ type matchPattern struct {
 	hasEllipsis bool
 	pVars       *LispList
 	pattern     *LispList
-	varMap      *map[SYMBOL]lispVal
+	varMap      *map[SYMBOL][]lispVal
 }
 
 // Check to see if a pVar matches a target
@@ -71,19 +71,19 @@ func (p *pVar) Matches(other lispVal) bool {
 }
 
 // Make sure that repeated vars are the same
-func (p *pVar) propagateMatch(attempt *map[SYMBOL]lispVal) bool {
+func (p *pVar) propagateMatch(attempt *map[SYMBOL][]lispVal) bool {
 	if p.rawMatch || p.value == "_" {
 		// Raw matches and underscores don't propagate
 		return true
 	}
 
 	existingVal, present := (*attempt)[p.symbol]
-	if present {
-		if p.value != existingVal {
-			return false
-		}
+
+	if present && !p.isRepeating() {
+		return p.value == existingVal[0]
 	}
-	(*attempt)[p.symbol] = p.value
+
+	(*attempt)[p.symbol] = append((*attempt)[p.symbol], p.value)
 	return true
 }
 
@@ -113,7 +113,7 @@ func (m *matchPattern) isSubpattern() bool {
 
 // Initialise a new template
 func NewMatchPattern(ptrn *LispList) (*matchPattern, error) {
-	varMap := make(map[SYMBOL]lispVal)
+	varMap := make(map[SYMBOL][]lispVal)
 	p := matchPattern{
 		repeating:   false,
 		hasEllipsis: false,
@@ -232,11 +232,11 @@ MATCHLOOP:
 					subMap = make(map[SYMBOL][]lispVal)
 					for k, v := range *p.(*matchPattern).varMap {
 						if val, alreadyMatched := (*m.varMap)[k]; alreadyMatched {
-							if val != v {
+							if val[0] != v[0] {
 								return false
 							}
 						}
-						subMap[k] = []lispVal{v}
+						subMap[k] = v
 					}
 				}
 
@@ -285,10 +285,10 @@ MATCHLOOP:
 				// Update the master map
 				switch p.(type) {
 				case *pVar:
-					(*m.varMap)[p.(*pVar).symbol] = List(matchedVals...)
+					(*m.varMap)[p.(*pVar).symbol] = []lispVal{List(matchedVals...)}
 				case *matchPattern:
 					for k, v := range subMap {
-						(*m.varMap)[k] = List(v...)
+						(*m.varMap)[k] = []lispVal{List(v...)}
 					}
 				}
 				break MATCHLOOP
@@ -305,9 +305,17 @@ MATCHLOOP:
 	return true
 }
 
+func (m *matchPattern) getMatches() map[SYMBOL]lispVal {
+	matches := make(map[SYMBOL]lispVal)
+	for k, v := range *(m.varMap) {
+		matches[k] = v[0].(lispVal)
+	}
+	return matches
+}
+
 func (m *matchPattern) PrintMatch() {
 	fmt.Println("match map:")
-	for k, v := range *(m.varMap) {
+	for k, v := range m.getMatches() {
 		fmt.Printf("\t%v --> %v\n", k, v)
 	}
 }
