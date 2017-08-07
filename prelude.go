@@ -68,5 +68,5 @@ var prelude = []string{
 	"(defn reverse (lst) (foldl (flip cons) '() lst))",
 	// Built-in macros
 	// NOTE :: as I'm still working on the macro syntax, these may change...
-	"(defmacro unless (arg body) `(if (not ,arg) ,body))",
+	"(defmacro unless (arg body) `(if (not ~arg) ~body))",
 }

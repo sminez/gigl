@@ -9,7 +9,6 @@ LISP with goroutines? Sounds fun to me!
 - [ ] make the list functions take a sequence interface
 - [ ] fix broken quoting
 - [ ] let
-- [ ] Type checks
 - [ ] Bingnum arithmetic
   - see https://golang.org/pkg/math/big/
 - [ ] for-each
@@ -24,6 +23,8 @@ LISP with goroutines? Sounds fun to me!
 
 # .: References :.
 --------------------
+`https://clojure.org/reference/reader`
+
 `https://github.com/SteelSeries/golisp`
 `http://norvig.com/lispy.html`
 `http://norvig.com/lispy2.html`

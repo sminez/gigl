@@ -10,7 +10,7 @@ import (
 // (Ensure that keywords and symbols contain valid characters)
 var quotes = map[string]SYMBOL{
 	"'": SYMBOL("quote"), "`": SYMBOL("quasiquote"),
-	",": SYMBOL("unquote"), ",@": SYMBOL("unquote-splicing"),
+	"~": SYMBOL("unquote"), "~@": SYMBOL("unquote-splicing"),
 }
 
 type tag struct {
@@ -33,20 +33,22 @@ type Tokeniser struct {
 func NewTokeniser() *Tokeniser {
 	return &Tokeniser{
 		tags: []tag{
-			tag{"OPENPAREN", regexp.MustCompile(`^\(`)},
-			tag{"CLOSEPAREN", regexp.MustCompile(`^\)`)},
-			tag{"OPENBRACKET", regexp.MustCompile(`^\[`)},
-			tag{"CLOSEBRACKET", regexp.MustCompile(`^\]`)},
-			tag{"OPENBRACE", regexp.MustCompile("^{")},
-			tag{"CLOSEBRACE", regexp.MustCompile("^}")},
+			tag{"LIST_START", regexp.MustCompile(`^\(`)},
+			tag{"LIST_END", regexp.MustCompile(`^\)`)},
+			tag{"VEC_START", regexp.MustCompile(`^\[`)},
+			tag{"VEC_END", regexp.MustCompile(`^\]`)},
+			tag{"MAP_START", regexp.MustCompile("^{")},
+			tag{"SET_START", regexp.MustCompile("^#{")},
+			tag{"MAP_OR_SET_END", regexp.MustCompile("^}")},
 			tag{"COMPLEX", regexp.MustCompile(`^-?\d+\.?\d*[+-]\d+\.?\d*j`)},
 			tag{"COMPLEX_PURE", regexp.MustCompile(`^-?\d+\.?\d*j`)},
 			tag{"FLOAT", regexp.MustCompile(`^-?\d+\.\d+`)},
 			tag{"INT", regexp.MustCompile(`^-?\d+`)},
 			tag{"BOOL", regexp.MustCompile(`^#[tf]`)},
-			tag{"SPLICE", regexp.MustCompile("^,@")},
-			tag{"QUOTE", regexp.MustCompile("^['`,]")},
+			tag{"SPLICE", regexp.MustCompile("^~@")},
+			tag{"QUOTE", regexp.MustCompile("^['`~]")},
 			tag{"WHITESPACE", regexp.MustCompile(`^\s+`)},
+			tag{"COMMA", regexp.MustCompile(`^,`)},
 			tag{"STRING", regexp.MustCompile(`^"([^"]*)"`)},
 			tag{"KEYWORD", regexp.MustCompile("^:[^(){}\\[\\],'`@:; \t\n]*")},
 			tag{"SYMBOL", regexp.MustCompile("^[^(){}\\[\\],'`@:; \t\n]*")},
@@ -64,7 +66,8 @@ func (t *Tokeniser) Tokenise(s string) {
 	for len(s) > 0 {
 		for _, tag := range t.tags {
 			if loc := tag.regex.FindStringIndex(s); loc != nil {
-				if tag.name != "WHITESPACE" {
+				// A la Clojure/edn, commas are also whitespace
+				if (tag.name != "WHITESPACE") && (tag.name != "COMMA") {
 					t.tokens = append(t.tokens, token{tag.name, s[loc[0]:loc[1]]})
 				}
 				s = s[loc[1]:]
@@ -99,12 +102,12 @@ func (t *Tokeniser) parseTokens() (lispVal, error) {
 	}
 
 	switch token.Tag {
-	case "OPENPAREN":
+	case "LIST_START":
 		// Start of a list so recuse and build it up
 		lst := make([]lispVal, 0)
 		parsedToken, err := t.parseTokens()
 		for {
-			if parsedToken == "CLOSEPAREN" {
+			if parsedToken == "LIST_END" {
 				if err != nil {
 					return nil, fmt.Errorf("Syntax error")
 				}
@@ -117,8 +120,28 @@ func (t *Tokeniser) parseTokens() (lispVal, error) {
 			}
 		}
 
-	case "CLOSEPAREN":
-		return "CLOSEPAREN", nil
+	case "LIST_END":
+		return "LIST_END", nil
+
+	case "VEC_START":
+		lst := make([]lispVal, 0)
+		parsedToken, err := t.parseTokens()
+		for {
+			if parsedToken == "VEC_END" {
+				if err != nil {
+					return nil, fmt.Errorf("Syntax error")
+				}
+				return lst, nil
+			}
+			lst = append(lst, parsedToken)
+			parsedToken, err = t.parseTokens()
+			if err != nil {
+				return nil, err
+			}
+		}
+
+	case "VEC_END":
+		return "VEC_END", nil
 
 	case "QUOTE", "SPLICE":
 		// Something is being quoted or unquoted

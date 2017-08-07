@@ -1,9 +1,6 @@
 package gigl
 
-import (
-	"fmt"
-	"strings"
-)
+import "fmt"
 
 /*
 	Type constructors and helper functions for the REPL
@@ -13,60 +10,26 @@ import (
 // dynamic typing...I hope!
 type lispVal interface{}
 
-// Convert a lispVal to a string
-func String(val lispVal) string {
-	switch val := val.(type) {
-	case LispList:
-		return val.String()
-
-	case []lispVal:
-		// display the slice as a LISPy list
-		lst := make([]string, len(val))
-		for i, element := range val {
-			lst[i] = String(element)
-		}
-		return "(" + strings.Join(lst, " ") + ")"
-
-	case string:
-		return fmt.Sprintf("\"%v\"", val)
-
-	case KEYWORD:
-		return fmt.Sprintf(":%v", val)
-
-	case float64:
-		// Try to print ints correctly
-		i := int64(val)
-		if float64(i) == val {
-			return fmt.Sprint(i)
-		} else {
-			return fmt.Sprint(val)
-		}
-
-	case bool:
-		if val {
-			return "#t"
-		}
-		return "#f"
-
-	case nil:
-		return ""
-
-	default:
-		// Try to just print the value
-		return fmt.Sprint(val)
-	}
+// A lispCollection allows for retrieving elements and extending the collection
+type lispCollection interface {
+	Len() (int, error)
+	GetIndex(int) (lispVal, error)
+	Conj(lispVal) (lispCollection, error)
 }
 
 // A lispFunc takes values and returns a value
 type lispFunc func(...lispVal) lispVal
 
-// A lisp comp takes values and returns a bool
-type lispComp func(...lispVal) bool
-
 // Only basic data types so far
 type SYMBOL string
 
 type KEYWORD string
+
+type VECTOR []lispVal
+
+type MAP map[lispVal]lispVal
+
+type SET map[lispVal]bool
 
 // TODO :: It would be nice to have the full numeric tower...
 // type float64 float64
@@ -130,4 +93,40 @@ func makeProc(params, body lispVal, env *environment, e *evaluator) (func(...lis
 		}
 	}
 	return proc, nil
+}
+
+// Convert a lispVal to a string
+func String(val lispVal) string {
+	switch val := val.(type) {
+	case LispList:
+		return val.String()
+
+	case string:
+		return fmt.Sprintf("\"%v\"", val)
+
+	case KEYWORD:
+		return fmt.Sprintf(":%v", val)
+
+	case float64:
+		// Try to print ints correctly
+		i := int64(val)
+		if float64(i) == val {
+			return fmt.Sprint(i)
+		} else {
+			return fmt.Sprint(val)
+		}
+
+	case bool:
+		if val {
+			return "#t"
+		}
+		return "#f"
+
+	case nil:
+		return ""
+
+	default:
+		// Try to just print the value
+		return fmt.Sprint(val)
+	}
 }

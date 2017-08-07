@@ -28,7 +28,7 @@ func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 
 	for {
 		switch expr := expression.(type) {
-		case float64, string, bool, KEYWORD:
+		case float64, string, bool, KEYWORD, []lispVal, map[lispVal]lispVal:
 			// Just return the value as is
 			return expr, nil
 
