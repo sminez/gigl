@@ -1,0 +1,28 @@
+;; GIGL :: Example Programs
+;; ========================
+;; For now you will need to copy/paste these into the repl
+;; In the future you will be able to load from a file and
+;; execute files directly from the command line.
+;;
+;; For more examples see prelude.go
+;;
+;; NOTE: Things are a little easier to read if you set syntax
+;;       highlighting to scheme.
+
+(defn fact (n)
+  ;; Simple recursion works as you would expect
+  (if (= n 0)
+    1
+    (* n (fact (- n 1)))))
+
+(defn qsort (lst)
+  ;; Recursive quicksort
+  (if (null? lst)
+    lst
+    ((lambda (pivot remaining)
+      (append
+        (append
+          (qsort (filter (<=to pivot) remaining))
+          pivot)
+        (qsort (filter (>than pivot) remaining))))
+     (car lst) (cdr lst))))
