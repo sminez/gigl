@@ -6,9 +6,11 @@ var prelude = []string{
 	// Simple procedures that are just easier to define in LISP...!
 	"(defn list l l)",
 	"(defn abs (n) ((if (> n 0) + -) 0 n))",
-	// Drop the first n elements of a list and return the rest
-	"(defn list-tail (lst n) (if (= n 0) lst (list-tail (cdr lst) (- n 1))))",
-	"(defn drop-n (n lst) (if (= n 0) lst (drop-n (- n 1) (cdr lst))))",
+	// Drop/take the first elements of a list
+	"(defn drop (n lst) (if (= n 0) lst (drop-n (- n 1) (cdr lst))))",
+	"(defn take (n lst) (if (= n 0) '() (cons (car lst) (take (- n 1) (cdr lst)))))",
+	"(defn dropwhile (pred lst) (cond ((null? lst) '()) ((pred (car lst)) (dropwhile pred (cdr lst))) (:else lst)))",
+	"(defn takewhile (pred lst) (cond ((null? lst) '()) ((pred (car lst)) (cons (car lst) (takewhile pred (cdr lst)))) (:else '())))",
 	// Selectors for specific elements of a list
 	"(defn caar (lst) (car (car lst)))",
 	"(defn cadr (lst) (car (cdr lst)))",
@@ -66,6 +68,10 @@ var prelude = []string{
 	"(define scanr (λ (f acc lst) (scanl f acc (reverse lst))))",
 	"(define scan (λ (f lst) (if (= 0 (len lst)) lst (scanl f (list (car lst)) (cdr lst)))))",
 	"(defn reverse (lst) (foldl (flip cons) '() lst))",
+	// More fun with maps and higher order functions
+	"(defn concat-map (f lst) (fold append (map f lst)))",
+	"(defn cmap (f lst) (fold append (map f lst)))",
+	"(defn flatten (lst) (if (list? lst) (cmap flatten lst) (list lst)))",
 	// Built-in macros
 	// NOTE :: as I'm still working on the macro syntax, these may change...
 	"(defmacro unless (arg body) `(if (not ~arg) ~body))",

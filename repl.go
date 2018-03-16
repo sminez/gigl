@@ -53,7 +53,8 @@ func REPL() {
 
 		// Prepend the previous user input if there is any
 		if previousInput != "" {
-			input = previousInput + " " + strings.TrimSpace(input)
+			// input = previousInput + " " + strings.TrimSpace(input)
+			input = previousInput + "\n" + input
 		}
 
 		if len(input) > 0 {

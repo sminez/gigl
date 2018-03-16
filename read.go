@@ -23,6 +23,7 @@ type token struct {
 	Text string
 }
 
+// Tokeniser turns a string into a slice of tokens for parsing
 type Tokeniser struct {
 	tags   []tag
 	input  string
@@ -30,9 +31,11 @@ type Tokeniser struct {
 	tokens []token
 }
 
+// NewTokeniser constructs a new Tokeniser...!
 func NewTokeniser() *Tokeniser {
 	return &Tokeniser{
 		tags: []tag{
+			tag{"LINECOMMENT", regexp.MustCompile("^;;")},
 			tag{"LIST_START", regexp.MustCompile(`^\(`)},
 			tag{"LIST_END", regexp.MustCompile(`^\)`)},
 			tag{"VEC_START", regexp.MustCompile(`^\[`)},
@@ -47,6 +50,7 @@ func NewTokeniser() *Tokeniser {
 			tag{"BOOL", regexp.MustCompile(`^#[tf]`)},
 			tag{"SPLICE", regexp.MustCompile("^~@")},
 			tag{"QUOTE", regexp.MustCompile("^['`~]")},
+			tag{"NEWLINE", regexp.MustCompile(`^\n`)},
 			tag{"WHITESPACE", regexp.MustCompile(`^\s+`)},
 			tag{"COMMA", regexp.MustCompile(`^,`)},
 			tag{"STRING", regexp.MustCompile(`^"([^"]*)"`)},
@@ -62,14 +66,28 @@ func (t *Tokeniser) Tokenise(s string) {
 	t.tokens = make([]token, 0)
 	t.ix = 0
 	t.input = s
+	inComment := false
 
 	for len(s) > 0 {
 		for _, tag := range t.tags {
 			if loc := tag.regex.FindStringIndex(s); loc != nil {
-				// A la Clojure/edn, commas are also whitespace
-				if (tag.name != "WHITESPACE") && (tag.name != "COMMA") {
-					t.tokens = append(t.tokens, token{tag.name, s[loc[0]:loc[1]]})
+				switch tag.name {
+				case "LINECOMMENT":
+					inComment = true
+
+				case "WHITESPACE", "COMMA":
+					// A la Clojure/edn, commas are also whitespace
+
+				case "NEWLINE":
+					// Terminate a line comment if we are in one
+					inComment = false
+
+				default:
+					if !inComment {
+						t.tokens = append(t.tokens, token{tag.name, s[loc[0]:loc[1]]})
+					}
 				}
+
 				s = s[loc[1]:]
 				break
 			}
@@ -77,7 +95,7 @@ func (t *Tokeniser) Tokenise(s string) {
 	}
 }
 
-// return the next token in the stream
+// NextToken return the next token in the stream
 func (t *Tokeniser) NextToken() (token, error) {
 	if t.ix >= len(t.tokens) {
 		return token{}, fmt.Errorf("Ran out of tokens")
