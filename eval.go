@@ -2,20 +2,23 @@ package gigl
 
 import "fmt"
 
-type evaluator struct {
+// Evaluator holds an execution environment and macrotable for running eval
+type Evaluator struct {
 	globalEnv  *environment
 	macroTable map[SYMBOL]lispVal
 }
 
-func NewEvaluator() *evaluator {
-	e := evaluator{}
+// NewEvaluator ...
+func NewEvaluator() *Evaluator {
+	e := Evaluator{}
 	e.globalEnv = newGlobalEnvironment(e)
 	e.macroTable = make(map[SYMBOL]lispVal)
 	return &e
 }
 
 // eval evaluates an expression in an environment
-func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) {
+// TODO :: There needs to be a blanket check that `rest` is empty at the end of each branch
+func (e *Evaluator) eval(expression lispVal, env *environment) (lispVal, error) {
 	var (
 		result lispVal
 		err    error
@@ -76,9 +79,8 @@ func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 				// recursively expand any quasi-quoted expressions
 				return e.expandQuasiQuote(rest.Head(), env)
 
-			// case "unquote", "unquote-splicing":
-			// 	// This is handled inside of expandQuasiQuote
-			// 	return nil, fmt.Errorf("Cannot unquote outside of a quasi-quoted expression.")
+			case "unquote", "unquote-splicing":
+				return nil, fmt.Errorf("Cannot unquote outside of a quasi-quoted expression")
 
 			case "if":
 				// Evaluate the conditional and cast to a bool
@@ -91,14 +93,19 @@ func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 				if check.(bool) {
 					// evaluate the true branch
 					return e.eval(trueBranch, env)
-				} else {
-					// evaluate the false branch or return nil
-					falseBranch, _ := rest.popHead()
-					if falseBranch != nil {
-						return e.eval(falseBranch, env)
-					}
-					return nil, nil
 				}
+
+				// evaluate the false branch or return nil
+				falseBranch, rest := rest.popHead()
+				if rest.length != 0 {
+					return nil, fmt.Errorf("Malformed `if` form")
+				}
+
+				if falseBranch != nil {
+					return e.eval(falseBranch, env)
+				}
+
+				return nil, nil
 
 			case "cond":
 				valBranch, rest := rest.popHead()
@@ -125,10 +132,11 @@ func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 					case KEYWORD:
 						if check == KEYWORD("else") {
 							return e.eval(ifTrue, env)
-						} else {
-							return nil, fmt.Errorf("Invalid cond condition: %v", branch)
 						}
+
+						return nil, fmt.Errorf("Invalid cond condition: %v", branch)
 					}
+
 					valBranch, rest = rest.popHead()
 					branch, ok = valBranch.(*LispList)
 					if !ok {
@@ -145,7 +153,7 @@ func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 					return nil, err
 				}
 				if env.find(sym.(SYMBOL)) == nil {
-					err = fmt.Errorf("Attempt to set! a new symbol: use define instead.")
+					err = fmt.Errorf("Attempt to set! a new symbol: use define instead")
 					return nil, err
 				}
 
@@ -166,17 +174,17 @@ func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 					return nil, err
 				}
 				if env.find(sym.(SYMBOL)) != nil {
-					err = fmt.Errorf("Unable to redefine an existing symbol, use set!")
+					err = fmt.Errorf("Unable to redefine an existing symbol, use `set!`")
 					return nil, err
-				} else {
-					value, _ := rest.popHead()
-					result, err = e.eval(value, env)
-					if err != nil {
-						return nil, err
-					}
-					env.vals[sym.(SYMBOL)] = result
-					return nil, nil
 				}
+
+				value, _ := rest.popHead()
+				result, err = e.eval(value, env)
+				if err != nil {
+					return nil, err
+				}
+				env.vals[sym.(SYMBOL)] = result
+				return nil, nil
 
 			case "lambda", "λ":
 				// Define a new procedure and return it
@@ -193,22 +201,22 @@ func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 					return nil, err
 				}
 				if env.find(sym.(SYMBOL)) != nil {
-					err = fmt.Errorf("Unable to redefine an existing symbol, use set!")
+					err = fmt.Errorf("Unable to redefine an existing symbol, use `set!`")
 					return nil, err
-				} else {
-					params, rest := rest.popHead()
-					body, rest := rest.popHead()
-					proc, err := makeProc(params, body, env, e)
-					if err != nil {
-						return nil, err
-					}
-					env.vals[sym.(SYMBOL)] = proc
-					return nil, nil
 				}
+
+				params, rest := rest.popHead()
+				body, rest := rest.popHead()
+				proc, err := makeProc(params, body, env, e)
+				if err != nil {
+					return nil, err
+				}
+				env.vals[sym.(SYMBOL)] = proc
+				return nil, nil
 
 			case "defmacro":
 				if env != e.globalEnv {
-					return nil, fmt.Errorf("Macro definition is only allowed in the global scope.")
+					return nil, fmt.Errorf("Macro definition is only allowed in the global scope")
 				}
 				sym, rest := rest.popHead()
 				sym, ok := sym.(SYMBOL)
@@ -217,21 +225,45 @@ func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 					return nil, err
 				}
 				if _, ok := e.macroTable[sym.(SYMBOL)]; ok {
-					err = fmt.Errorf("Unable to redefine an existing macro.")
+					err = fmt.Errorf("Unable to redefine an existing macro")
 					return nil, err
-				} else {
-					params, rest := rest.popHead()
-					body, rest := rest.popHead()
-					proc, err := makeProc(params, body, env, e)
-					if err != nil {
-						return nil, err
-					}
-					e.macroTable[sym.(SYMBOL)] = proc
-					return nil, nil
 				}
 
-			// case "let":
-			// (let ((arg val) ...) (body ...)) => ((lambda (arg ...) (begin body ...)) val ...)
+				params, rest := rest.popHead()
+				body, rest := rest.popHead()
+				proc, err := makeProc(params, body, env, e)
+				if err != nil {
+					return nil, err
+				}
+				e.macroTable[sym.(SYMBOL)] = proc
+				return nil, nil
+
+			case "let":
+				// (let ((parm val) ...) (body ...)) => ((lambda (parm ...) (begin body ...)) val ...)
+				// TODO :: Named let
+				bindings, rest := rest.popHead()
+				body, rest := rest.popHead()
+				parms := List()
+				vals := List()
+				var pair lispVal
+
+				for i := 0; i < bindings.(*LispList).length; i++ {
+					pair, bindings = bindings.(*LispList).popHead()
+
+					pair, ok := pair.(*LispList)
+					if !ok {
+						err = fmt.Errorf("Bindings need to be pairs: %v", pair)
+						return nil, err
+					}
+
+					parms = consInternal(pair.Head(), parms)
+					vals = consInternal(pair.Tail().Head(), vals)
+				}
+
+				// Loop back to evaluate
+				expression = lispAppendInternal(
+					List(List(SYMBOL("lambda"), parms, body)),
+					vals)
 
 			case "begin":
 				// Execute a collection of statements and return the
@@ -249,6 +281,7 @@ func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 				expression = rest.Head()
 
 			case "apply":
+				// XXX : This is broken somehow...!
 				symProc, listArgs := rest.popHead()
 				proc, err := e.eval(symProc, env)
 
@@ -315,19 +348,19 @@ func (e *evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 // apply a procedure to a list of arguments and return the result
 // NOTE: built-in/primative operations will execute without any outer environment,
 //		 procedures will bind their arguments before executing their statements.
-func (e *evaluator) apply(proc lispVal, args []lispVal) (lispVal, error) {
+func (e *Evaluator) apply(proc lispVal, args []lispVal) (lispVal, error) {
 	switch p := proc.(type) {
 	case func(...lispVal) (lispVal, error):
 		return p(args...)
 
 	default:
-		return nil, fmt.Errorf("Unknown procedure type: %v\n%v", p)
+		return nil, fmt.Errorf("Unknown procedure type: %v", p)
 	}
 }
 
 // Expand quasi-quotes: expand `x -> 'x   `,x -> x   `(,@x y) -> (append x y)
 // NOTE :: doesn't seem to be handling nested s-exps correctly
-func (e *evaluator) expandQuasiQuote(expression lispVal, env *environment) (lispVal, error) {
+func (e *Evaluator) expandQuasiQuote(expression lispVal, env *environment) (lispVal, error) {
 	switch expr := expression.(type) {
 	case *LispList:
 		// Make sure we aren't splicing a list into the head position of the new list
@@ -409,7 +442,7 @@ func (e *evaluator) expandQuasiQuote(expression lispVal, env *environment) (lisp
 	}
 }
 
-func (e *evaluator) getArgs(lst *LispList, env *environment) ([]lispVal, error) {
+func (e *Evaluator) getArgs(lst *LispList, env *environment) ([]lispVal, error) {
 	var elem lispVal
 	args := make([]lispVal, lst.Len())
 

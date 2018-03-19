@@ -27,7 +27,7 @@ func (e *environment) find(sym SYMBOL) *environment {
 // newGlobalEnvironment constructs a new global environment with the
 // predefined builtin functions.
 // NOTE :: builtins are found in builtin.go
-func newGlobalEnvironment(e evaluator) *environment {
+func newGlobalEnvironment(e Evaluator) *environment {
 	return &environment{
 		map[SYMBOL]lispVal{
 			"+":        add,

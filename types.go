@@ -57,7 +57,7 @@ type procedure struct {
 }
 
 // Make a callable procedure
-func makeProc(params, body lispVal, env *environment, e *evaluator) (func(...lispVal) (lispVal, error), error) {
+func makeProc(params, body lispVal, env *environment, e *Evaluator) (func(...lispVal) (lispVal, error), error) {
 	innerEnv := &environment{
 		vals:  make(map[SYMBOL]lispVal),
 		outer: env,

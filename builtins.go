@@ -9,6 +9,27 @@ import (
 )
 
 /*
+ * Internal versions of list operations for easier use from Go
+ */
+
+// Construct a new list by prepending a new element
+// NOTE :: Does not fit the API for gigl builtins)
+func consInternal(v lispVal, lst *LispList) *LispList {
+	newList := NewList(v)
+	newList.root.next = lst.root
+	newList.length = lst.length + 1
+	return newList
+}
+
+// Append two lists together, creating a new list
+// NOTE :: Does not fit the API for gigl builtins)
+func lispAppendInternal(l1, l2 *LispList) *LispList {
+	s1 := l1.toSlice()
+	s2 := l2.toSlice()
+	return List(append(s1, s2...)...)
+}
+
+/*
 	Builtin functions for the global environment.
 
 	:: NOTE ::
