@@ -247,13 +247,17 @@ func (e *Evaluator) eval(expression lispVal, env *environment) (lispVal, error) 
 				vals := List()
 				var pair lispVal
 
-				for i := 0; i < bindings.(*LispList).length; i++ {
+				for {
 					pair, bindings = bindings.(*LispList).popHead()
 
 					pair, ok := pair.(*LispList)
 					if !ok {
 						err = fmt.Errorf("Bindings need to be pairs: %v", pair)
 						return nil, err
+					}
+					if isEmptyList(pair) && isEmptyList(bindings) {
+						// End of the bindings
+						break
 					}
 
 					parms = consInternal(pair.Head(), parms)

@@ -15,14 +15,60 @@
     1
     (* n (fact (- n 1)))))
 
+
 (defn qsort (lst)
-  ;; Recursive quicksort
+  ;; Recursive quicksort using let
   (if (null? lst)
     lst
-    ((lambda (pivot remaining)
+    (let ((pivot (car lst))
+          (remaining (cdr lst)))
       (append
-        (append
           (qsort (filter (<=to pivot) remaining))
-          pivot)
-        (qsort (filter (>than pivot) remaining))))
-     (car lst) (cdr lst))))
+          `(~pivot)
+          (qsort (filter (>than pivot) remaining))))))
+
+;; A simple implementation of stream based lazy evaluation
+(defn delay (expr)
+  (lambda () expr))
+
+(defn force (promise)
+  (promise))
+
+(defn s-cons (a b)
+ (cons a (delay b)))
+
+;; These will work fine as they are
+(define s-car car)
+(define empty-stream? null?)
+(define empty-stream '())
+
+(defn s-cdr (stream)
+  ;; We need to force the head of the tail of the stream
+  ;; in order to evaluate it
+  (force (cadr stream)))
+
+(defn s-take (n stream)
+  ;; Take n values from a stream
+  (if (= n 0)
+    empty-stream
+    (s-cons (s-car stream) (s-take (- n 1) (s-cdr stream)))))
+
+(defn ones ()
+  (s-cons 1 (ones)))
+
+
+
+
+;; This blows up at present when given an argument...
+(defn Y (f)
+  ;; Y-combinator
+  ((lambda (x) (x x))
+   (lambda (x) (f (x x)))))
+
+(defn almost-factorial (f)
+  (lambda (n)
+    (if (= n 0)
+        1
+        (* n (f (- n 1))))))
+
+(define factorial (Y almost-factorial))

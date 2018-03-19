@@ -86,11 +86,12 @@ func makeProc(params, body lispVal, env *environment, e *Evaluator) (func(...lis
 		if err != nil {
 			return nil, err
 		}
+
 		if resultSlice, ok := result.([]lispVal); ok {
 			return List(resultSlice...), nil
-		} else {
-			return result, nil
 		}
+
+		return result, nil
 	}
 	return proc, nil
 }
@@ -100,6 +101,9 @@ func String(val lispVal) string {
 	switch val := val.(type) {
 	case LispList:
 		return val.String()
+
+	case SYMBOL:
+		return fmt.Sprintf("%v", val)
 
 	case string:
 		return fmt.Sprintf("\"%v\"", val)

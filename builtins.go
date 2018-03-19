@@ -341,33 +341,37 @@ func isEqual(lst ...lispVal) (lispVal, error) {
 
 // Construct a new list by prepending a new element
 func cons(lst ...lispVal) (lispVal, error) {
+	if len(lst) != 2 {
+		return nil, fmt.Errorf("Cons takes two arguments")
+	}
+
 	newList := NewList(lst[0])
 	oldList, ok := lst[1].(*LispList)
-	if !ok {
-		return nil, fmt.Errorf("The second argument to cons must be a list")
+	if ok {
+		newList.root.next = oldList.root
+		newList.length = oldList.length + 1
+	} else {
+		newList = List(lst[0], lst[1])
+		// return nil, fmt.Errorf("The second argument to cons must be a list")
 	}
-	newList.root.next = oldList.root
-	newList.length = oldList.length + 1
 	return newList, nil
 }
 
-// Append two lists together, creating a new list
+// Append several lists together, creating a new list
 func lispAppend(lst ...lispVal) (lispVal, error) {
-	// extract all of the elements
-	l1, ok := lst[0].(*LispList)
-	if !ok {
-		return nil, fmt.Errorf("The first argument to append must be a list")
-	}
-	s1 := l1.toSlice()
+	slices := []lispVal{}
 
-	var s2 []lispVal
-	switch lst[1].(type) {
-	case *LispList:
-		s2 = lst[1].(*LispList).toSlice()
-	default:
-		s2 = []lispVal{lst[1]}
+	// extract all of the other lists
+	for _, l := range lst {
+		switch l.(type) {
+		case *LispList:
+			slices = append(slices, l.(*LispList).toSlice()...)
+		default:
+			return nil, fmt.Errorf("Arguments to append must lists")
+		}
 	}
-	return List(append(s1, s2...)...), nil
+
+	return List(slices...), nil
 }
 
 // return the first element of a list
